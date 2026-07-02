@@ -40,7 +40,7 @@ export default async function middleware(req: NextRequest) {
 
   // 1. REESCRITURA PARA EL DOMINIO PRINCIPAL (Nuestra Landing Page del SaaS)
   if (isRootDomain) {
-    response = NextResponse.rewrite(new URL(`/(app)${path}`, req.url));
+    response = NextResponse.rewrite(new URL(`/home${path}`, req.url));
   } else {
     // 2. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
     response = NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url));
