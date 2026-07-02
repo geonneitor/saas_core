@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Clock, Phone, User, Plus } from 'lucide-react';
+import { Calendar, Clock, Phone, User, Plus, Settings } from 'lucide-react';
 
 import AiAssistantChat from '@/components/AiAssistantChat';
 import { BookingModal } from '@/components/BookingModal';
-import { AvatarSelector } from '@/components/AvatarSelector';
 
 export default async function TenantDashboard(props: { params: Promise<{ domain: string }> }) {
   const params = await props.params;
@@ -24,7 +24,10 @@ export default async function TenantDashboard(props: { params: Promise<{ domain:
     notFound();
   }
 
-  const aiAvatar = tenant.business_settings?.[0]?.ai_avatar || 'lotito';
+  const settings = Array.isArray(tenant.business_settings) 
+    ? tenant.business_settings[0] 
+    : tenant.business_settings;
+  const aiAvatar = settings?.ai_avatar || 'lotito';
 
   // 2. Traer citas del día actual
   const startOfDay = new Date();
@@ -52,7 +55,9 @@ export default async function TenantDashboard(props: { params: Promise<{ domain:
             <p className="text-[13px] font-medium text-neutral-500 mt-0.5 capitalize">{tenant.name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <AvatarSelector tenantId={tenant.id} currentAvatar={aiAvatar as string} />
+            <Link href="/admin" className="mr-3 text-sm font-semibold text-neutral-500 hover:text-black flex items-center gap-1.5 transition-colors bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-full">
+              <Settings size={14} /> Admin
+            </Link>
             <div className="w-10 h-10 bg-neutral-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm border border-neutral-800">
               {tenant.name.charAt(0).toUpperCase()}
             </div>

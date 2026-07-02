@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Settings2 } from 'lucide-react';
-import { updateAiAvatar } from '@/app/[domain]/actions';
+import { updateAiSettings } from '@/app/[domain]/actions';
 import { AvatarSystem } from './avatars/AvatarSystem';
 
 const AVATARS = [
@@ -19,7 +19,7 @@ export function AvatarSelector({ tenantId, currentAvatar }: { tenantId: string, 
 
   const handleSelect = async (avatarId: string) => {
     setIsUpdating(true);
-    await updateAiAvatar(tenantId, avatarId);
+    await updateAiSettings(tenantId, { ai_avatar: avatarId });
     setIsUpdating(false);
     setIsOpen(false);
   };

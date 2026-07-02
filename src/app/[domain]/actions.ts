@@ -57,19 +57,37 @@ export async function bookAppointment(tenantId: string, data: { clientName: stri
   }
 }
 
-export async function updateAiAvatar(tenantId: string, avatarName: string) {
+export async function updateAiSettings(tenantId: string, data: { ai_avatar?: string, ai_prompt?: string, groq_api_key?: string }) {
   const supabase = await createClient();
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'No autenticado' };
+  }
+  
   try {
-    const { error } = await supabase
+    const { data: existing } = await supabase
       .from('business_settings')
-      .update({ ai_avatar: avatarName })
-      .eq('tenant_id', tenantId);
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      const res = await supabase.from('business_settings').update(data).eq('tenant_id', tenantId).select();
+      error = res.error;
+    } else {
+      const res = await supabase.from('business_settings').insert({ tenant_id: tenantId, ...data }).select();
+      error = res.error;
+    }
 
     if (error) throw error;
+    
     revalidatePath('/[domain]', 'page');
+    revalidatePath('/[domain]/admin', 'page');
     return { success: true };
   } catch (error: any) {
-    console.error('Error actualizando avatar:', error);
+    console.error('[updateAiSettings] Error actualizando settings de IA:', error);
     return { success: false, error: error.message };
   }
 }

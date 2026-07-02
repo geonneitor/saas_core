@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, Sparkles } from 'lucide-react';
 import { AvatarSystem } from './avatars/AvatarSystem';
 import { useBookingStore } from '@/store/useBookingStore';
+import { useRouter } from 'next/navigation';
 
 type AvatarVariant = 'lotito' | 'orb' | 'cat' | 'robot' | 'star';
 
@@ -24,6 +25,7 @@ export default function AiAssistantChat({
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const { openModal } = useBookingStore();
+  const router = useRouter();
   
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
@@ -79,9 +81,8 @@ export default function AiAssistantChat({
              // ZUSTAND: Abre el modal real
              openModal(tool.arguments);
           }
-          if (tool.name === 'cancel_appointment') {
-             // MVP simple mock for cancelling (will be handled in backend if possible, or trigger another UI)
-             setMessages(prev => [...prev, { role: 'assistant', text: "He cancelado la cita solicitada." }]);
+          if (tool.name === 'refresh_calendar') {
+             router.refresh();
           }
         });
       }

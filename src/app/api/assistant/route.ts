@@ -17,6 +17,31 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "create_appointment",
+      description: "Crea una cita oficial en la base de datos para el cliente.",
+      parameters: {
+        type: "object",
+        properties: { 
+          clientName: { type: "string" }, 
+          date: { type: "string", description: "YYYY-MM-DD" },
+          time: { type: "string", description: "HH:MM" },
+          notes: { type: "string" }
+        },
+        required: ["clientName", "date", "time"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "refresh_calendar",
+      description: "Actualiza el calendario visual. Úsalo después de agendar o cancelar.",
+      parameters: { type: "object", properties: {} }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "open_booking_modal",
       description: "Abre el formulario visual en pantalla para agendar una nueva cita.",
       parameters: {
@@ -76,22 +101,30 @@ const TOOLS = [
 
 export async function POST(req: Request) {
   try {
-    const { messages, tenantId } = await req.json();
+    const body = await req.json();
+    const { messages, tenantId } = body;
 
-    if (!process.env.GROQ_API_KEY) {
-      return NextResponse.json({ error: 'La API Key de Groq no está configurada.' }, { status: 500 });
+    if (!Array.isArray(messages)) {
+      return NextResponse.json({ error: 'El campo "messages" debe ser un array' }, { status: 400 });
     }
 
     const supabase = await createClient();
     let dynamicContext = "";
     let basePrompt = "Eres un asistente IA altamente capacitado.";
+    let settings: any = null;
 
     if (tenantId) {
-      // 1. Obtener settings del negocio (incluye el AI Prompt personalizado)
-      const { data: settings } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
-      if (settings?.ai_prompt) {
-        basePrompt = settings.ai_prompt;
-      }
+      // 1. Obtener settings del negocio
+      const { data } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
+      settings = data;
+      const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+      basePrompt = `
+Eres un asistente virtual agendador para el negocio "${settings?.business_name || 'tu negocio'}". 
+La fecha y hora actual es: ${currentDate}. Usa esto como referencia estricta para "hoy", "mañana" o fechas relativas.
+
+Aquí tienes la configuración específica del negocio:
+${settings?.ai_prompt || 'Sé amable y profesional.'}
+      `;
 
       // 2. Obtener contexto de citas
       const now = new Date();
@@ -120,10 +153,10 @@ export async function POST(req: Request) {
         dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.name || 'Anónimo'} | Estado: ${a.status}\n`;
       });
       
-      dynamicContext += `\nDIRECTRICES: Si te piden agendar, usa 'open_booking_modal'. Si te piden cancelar, usa 'cancel_appointment'. Nunca digas que tú no puedes hacerlo.`;
+      dynamicContext += `\nDIRECTRICES: Si te piden agendar, usa 'create_appointment'. Si te piden cancelar, usa 'cancel_appointment'. Después de hacerlo, usa 'refresh_calendar'. Nunca digas que tú no puedes hacerlo.`;
     }
 
-    let groqMessages = [
+    let groqMessages: any[] = [
       { role: 'system', content: basePrompt + dynamicContext },
       ...messages.map((m: any) => ({
         role: m.sender === 'lotito' || m.role === 'assistant' ? 'assistant' : 'user',
@@ -132,10 +165,16 @@ export async function POST(req: Request) {
     ];
 
     async function callGroq(msgs: any[]) {
+      const apiKey = settings?.groq_api_key?.trim() || process.env.GROQ_API_KEY?.trim();
+      
+      if (!apiKey) {
+        throw new Error('GROQ_API_KEY no configurada (ni en .env ni en business_settings.groq_api_key del tenant)');
+      }
+
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY!.trim()}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -147,7 +186,10 @@ export async function POST(req: Request) {
           tool_choice: "auto"
         }),
       });
-      if (!response.ok) throw new Error('Error de Groq');
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`Groq API error ${response.status}: ${errBody}`);
+      }
       return response.json();
     }
 
@@ -158,8 +200,8 @@ export async function POST(req: Request) {
 
     // Manejo de herramientas (Tool Calling)
     if (messageObj.tool_calls) {
-      const backendTools = messageObj.tool_calls.filter((tc: any) => ['search_client_info', 'cancel_appointment', 'set_reminder'].includes(tc.function.name));
-      const otherTools = messageObj.tool_calls.filter((tc: any) => !['search_client_info', 'cancel_appointment', 'set_reminder'].includes(tc.function.name));
+      const backendTools = messageObj.tool_calls.filter((tc: any) => ['search_client_info', 'cancel_appointment', 'set_reminder', 'create_appointment'].includes(tc.function.name));
+      const otherTools = messageObj.tool_calls.filter((tc: any) => !['search_client_info', 'cancel_appointment', 'set_reminder', 'create_appointment'].includes(tc.function.name));
 
       frontendToolCalls = otherTools.map((tc: any) => ({
         name: tc.function.name,
@@ -184,9 +226,53 @@ export async function POST(req: Request) {
               groqMessages.push({
                 role: 'tool',
                 tool_call_id: tc.id,
-                name: 'search_client_info',
-                content: JSON.stringify(clients || { error: 'No se encontraron clientes' })
+                name: tc.function.name,
+                content: clients?.length ? JSON.stringify(clients) : "Cliente no encontrado."
               });
+            }
+
+            if (tc.function.name === 'create_appointment') {
+              let customerId;
+              const { data: existingCustomer } = await supabase
+                .from('customers')
+                .select('id')
+                .eq('tenant_id', tenantId)
+                .ilike('name', `%${args.clientName}%`)
+                .maybeSingle();
+
+              if (existingCustomer) {
+                customerId = existingCustomer.id;
+              } else {
+                const { data: newCustomer, error } = await supabase
+                  .from('customers')
+                  .insert({ tenant_id: tenantId, name: args.clientName })
+                  .select()
+                  .single();
+                if (!error && newCustomer) customerId = newCustomer.id;
+              }
+
+              if (customerId) {
+                const startDateTime = new Date(`${args.date}T${args.time}`);
+                const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+                const { data: appt, error: apptError } = await supabase.from('appointments').insert({
+                  tenant_id: tenantId,
+                  customer_id: customerId,
+                  title: `Cita con ${args.clientName}`,
+                  start_time: startDateTime.toISOString(),
+                  end_time: endDateTime.toISOString(),
+                  status: 'scheduled',
+                  notes: args.notes || ''
+                }).select().single();
+
+                if (apptError) {
+                  console.error('[create_appointment] DB error:', apptError);
+                  groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'create_appointment', content: `Error al agendar cita: ${apptError.message}` });
+                } else {
+                  groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'create_appointment', content: `Cita agendada exitosamente (ID: ${appt.id}) para ${args.clientName} el ${args.date} a las ${args.time}.` });
+                }
+              } else {
+                groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'create_appointment', content: 'Error al crear cliente.' });
+              }
             }
             
             if (tc.function.name === 'cancel_appointment') {
@@ -194,10 +280,17 @@ export async function POST(req: Request) {
               // En un prod real usaríamos el ID de la cita. Aquí borramos la de ese cliente.
               const { data: customer } = await supabase.from('customers').select('id').ilike('name', `%${args.clientName}%`).eq('tenant_id', tenantId).maybeSingle();
               if (customer) {
-                 await supabase.from('appointments').delete().eq('customer_id', customer.id).eq('tenant_id', tenantId);
-                 groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: 'Cita cancelada correctamente.' });
+                 const { data: deleted, error: delError } = await supabase.from('appointments').delete().eq('customer_id', customer.id).eq('tenant_id', tenantId).select();
+                 
+                 if (delError) {
+                   groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: `Error al cancelar: ${delError.message}` });
+                 } else if (deleted && deleted.length === 0) {
+                   groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: 'No se encontraron citas activas para ese cliente.' });
+                 } else {
+                   groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: `Cita(s) cancelada(s): ${deleted.length} registro(s) eliminado(s).` });
+                 }
               } else {
-                 groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: 'No se encontró la cita para ese cliente.' });
+                 groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: 'No se encontró al cliente.' });
               }
             }
 
@@ -214,16 +307,32 @@ export async function POST(req: Request) {
         data = await callGroq(groqMessages);
         messageObj = data.choices[0].message;
         reply = messageObj.content || reply;
+        
+        // Capturar tool_calls de la segunda iteración (ej: refresh_calendar)
+        if (messageObj.tool_calls) {
+          const secondFrontendTools = messageObj.tool_calls
+            .filter((t: any) => t.function.name === 'refresh_calendar')
+            .map((t: any) => ({
+              id: t.id,
+              name: t.function.name,
+              arguments: JSON.parse(t.function.arguments)
+            }));
+          frontendToolCalls.push(...secondFrontendTools);
+        }
       }
     }
 
     if (!reply && frontendToolCalls.length > 0) {
-      reply = "¡Claro! Procesando tu solicitud... ✨";
+      if (frontendToolCalls.some((t: any) => t.name === 'refresh_calendar')) {
+        reply = "¡Listo! He actualizado el calendario con tu solicitud. ✨";
+      } else {
+        reply = "¡Claro! Procesando tu solicitud... ✨";
+      }
     }
 
     return NextResponse.json({ reply, toolCalls: frontendToolCalls });
-  } catch (error) {
-    console.error('API Route Error:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[API /assistant] Error:', error.message, error.stack);
+    return NextResponse.json({ error: 'Error interno del servidor', detail: error.message }, { status: 500 });
   }
 }

@@ -31,6 +31,17 @@ export default async function AdminPage() {
     revalidatePath('/admin');
   }
 
+  // Server Action to delete a tenant
+  async function deleteTenant(formData: FormData) {
+    'use server';
+    const supabase = await createClient();
+    const id = formData.get('id') as string;
+    
+    const { error } = await supabase.from('tenants').delete().eq('id', id);
+    if (error) console.error("Error deleting tenant:", error);
+    revalidatePath('/admin');
+  }
+
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div>
@@ -66,10 +77,16 @@ export default async function AdminPage() {
                 {tenant.subdomain}:3000
               </a>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${tenant.is_active ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                 {tenant.is_active ? 'Activo' : 'Suspendido'}
               </span>
+              <form action={deleteTenant}>
+                <input type="hidden" name="id" value={tenant.id} />
+                <button type="submit" className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-md text-xs font-semibold border border-red-200 transition-colors">
+                  Eliminar
+                </button>
+              </form>
             </div>
           </div>
         ))}
