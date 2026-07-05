@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
     // 2. Renovación exitosa del mes
     if (event.type === 'invoice.payment_succeeded') {
-       const invoice = event.data.object as Stripe.Invoice;
+       const invoice = event.data.object as any;
        if (invoice.subscription) {
           // Buscar tenant por su suscripción de Stripe
           const { data: tenant } = await supabase.from('tenants').select('id').eq('stripe_subscription_id', invoice.subscription).single();
