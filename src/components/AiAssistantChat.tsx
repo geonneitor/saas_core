@@ -11,11 +11,13 @@ type AvatarVariant = 'lotito' | 'orb' | 'cat' | 'robot' | 'star';
 export default function AiAssistantChat({ 
   tenantId, 
   tenantName,
-  aiAvatar = 'lotito'
+  aiAvatar = 'lotito',
+  isAdmin = false
 }: { 
   tenantId: string; 
   tenantName: string;
   aiAvatar?: AvatarVariant;
+  isAdmin?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: string, text: string}[]>([
@@ -66,6 +68,7 @@ export default function AiAssistantChat({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenantId,
+          isAdmin,
           messages: [...messages, newMsg]
         })
       });
@@ -97,54 +100,54 @@ export default function AiAssistantChat({
       {!isOpen && (
         <button 
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-8 right-6 h-16 w-16 bg-white border border-neutral-100 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 group"
+          className="fixed bottom-8 right-6 h-16 w-16 bg-surface border border-border rounded-full shadow-gold-glow flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 group"
         >
           <AvatarSystem variant={aiAvatar} isActive={false} />
         </button>
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[92vw] sm:w-100 h-150 max-h-[85vh] bg-white rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.4)] flex flex-col z-50 border border-neutral-200 overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
-          <div className="bg-neutral-50 border-b border-neutral-100 p-4 flex justify-between items-center">
+        <div className="fixed bottom-6 right-6 w-[92vw] sm:w-100 h-150 max-h-[85vh] bg-surface rounded-3xl flex flex-col z-50 border border-border overflow-hidden animate-in slide-in-from-bottom-8 duration-300 card-depth">
+          <div className="bg-surface-bright border-b border-border p-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center border border-neutral-100 overflow-hidden">
+              <div className="w-10 h-10 bg-surface rounded-full shadow-sm flex items-center justify-center border border-border overflow-hidden">
                 <AvatarSystem variant={aiAvatar} isActive={true} />
               </div>
               <div>
-                <h3 className="font-bold text-neutral-900 text-[15px] leading-none capitalize">{aiAvatar} AI</h3>
-                <span className="text-[10px] text-neutral-400 font-bold tracking-wide uppercase mt-1 block">Conectado a Groq</span>
+                <h3 className="font-serif font-bold text-foreground text-lg leading-none capitalize">{aiAvatar} AI</h3>
+                <span className="text-[10px] text-gold-primary font-bold tracking-wide uppercase mt-1 block">Conectado a Groq</span>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-neutral-400 hover:text-neutral-900 p-2 rounded-full hover:bg-neutral-100 transition-colors">
+            <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-surface-container transition-colors">
               <X size={20} />
             </button>
           </div>
 
-          <div className="flex-1 p-5 overflow-y-auto bg-white flex flex-col gap-4">
+          <div className="flex-1 p-5 overflow-y-auto bg-surface flex flex-col gap-4">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl text-[15px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-black text-white rounded-tr-sm' : 'bg-[#F9FAFB] border border-neutral-100 text-neutral-800 rounded-tl-sm'}`}>
+                <div className={`max-w-[85%] p-4 rounded-3xl text-[15px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'btn-premium-gold rounded-tr-sm' : 'bg-surface-container border border-border text-foreground rounded-tl-sm'}`}>
                   {msg.text}
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-[#F9FAFB] border border-neutral-100 p-4 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center">
-                  <div className="w-2 h-2 bg-neutral-300 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-neutral-300 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
-                  <div className="w-2 h-2 bg-neutral-300 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
+                <div className="bg-surface-container border border-border p-4 rounded-3xl rounded-tl-sm shadow-sm flex gap-1.5 items-center">
+                  <div className="w-2 h-2 bg-gold-primary rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gold-primary rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+                  <div className="w-2 h-2 bg-gold-primary rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
                 </div>
               </div>
             )}
             <div ref={endOfMessagesRef} />
           </div>
 
-          <div className="p-4 bg-white border-t border-neutral-100">
-            <div className="flex items-center gap-2 bg-neutral-50 rounded-full p-1.5 pr-2.5 border border-neutral-200 shadow-inner">
+          <div className="p-4 bg-surface border-t border-border">
+            <div className="flex items-center gap-2 bg-surface-bright rounded-full p-1.5 pr-2.5 border border-border shadow-inner">
               <button 
                 onClick={toggleMic}
-                className={`p-2.5 rounded-full transition-all ${isListening ? 'bg-red-500 text-white shadow-lg animate-pulse' : 'text-neutral-400 hover:bg-neutral-200 hover:text-neutral-800'}`}
+                className={`p-2.5 rounded-full transition-all ${isListening ? 'bg-error text-on-error shadow-lg animate-pulse' : 'text-muted-foreground hover:bg-surface-container hover:text-foreground'}`}
                 title="Dictado por voz"
               >
                 <Mic size={18} className="stroke-[2.5px]" />
@@ -155,14 +158,14 @@ export default function AiAssistantChat({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Ej. Cancela mi cita de hoy..." 
-                className="flex-1 bg-transparent border-none focus:outline-none text-[14px] px-1 py-2 placeholder:text-neutral-400 font-medium text-neutral-900"
+                className="flex-1 bg-transparent border-none focus:outline-none text-[14px] px-2 py-2 placeholder:text-muted-foreground font-medium text-foreground"
               />
               <button 
                 onClick={sendMessage}
                 disabled={!input.trim() || isLoading}
-                className="p-2.5 bg-black text-white rounded-full disabled:opacity-50 hover:bg-neutral-800 transition-colors shadow-md"
+                className="p-2.5 btn-premium-gold rounded-full disabled:opacity-50 transition-colors shadow-md flex items-center justify-center"
               >
-                <Send size={18} className="ml-0.5 stroke-[2.5px]" />
+                <Send size={18} className="ml-0.5 stroke-[2.5px] text-on-primary" />
               </button>
             </div>
           </div>

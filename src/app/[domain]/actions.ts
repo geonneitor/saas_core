@@ -1,10 +1,11 @@
 "use server";
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function bookAppointment(tenantId: string, data: { clientName: string, date: string, time: string, notes: string }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   try {
     // 1. Buscar o crear cliente
@@ -63,6 +64,16 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return { success: false, error: 'No autenticado' };
+  }
+
+  const { data: tenantData } = await supabase
+    .from('tenants')
+    .select('owner_id')
+    .eq('id', tenantId)
+    .single();
+
+  if (!tenantData || tenantData.owner_id !== user.id) {
+    return { success: false, error: 'Sin permisos de administrador para este tenant' };
   }
   
   try {

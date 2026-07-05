@@ -1,7 +1,8 @@
 'use client';
 
-import { Calendar, Users, Home, Settings } from 'lucide-react';
+import { Calendar, Users, Home, Settings, CreditCard } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Sidebar,
   SidebarContent,
@@ -14,7 +15,15 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-export function AppSidebar({ tenant }: { tenant: any }) {
+interface TenantLite {
+  id: string;
+  name: string;
+  subdomain: string;
+}
+
+export function AppSidebar({ tenant }: { tenant: TenantLite }) {
+  const pathname = usePathname();
+
   const items = [
     {
       title: 'Panel de Control',
@@ -32,8 +41,13 @@ export function AppSidebar({ tenant }: { tenant: any }) {
       icon: Users,
     },
     {
+      title: 'Facturación',
+      url: '/admin/billing',
+      icon: CreditCard,
+    },
+    {
       title: 'Configuración',
-      url: '/admin#configuracion',
+      url: '/admin/settings',
       icon: Settings,
     },
   ];
@@ -51,14 +65,22 @@ export function AppSidebar({ tenant }: { tenant: any }) {
           <SidebarGroupLabel>Menú Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton render={<Link href={item.url} />} tooltip={item.title}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items.map((item) => {
+                const href = `/admin${item.url === '/admin' ? '' : item.url.replace('/admin', '')}`;
+                const isActive = pathname === href;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      render={<Link href={href} />}
+                      tooltip={item.title}
+                      isActive={isActive}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

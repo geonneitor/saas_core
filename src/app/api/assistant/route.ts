@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const TOOLS = [
   {
@@ -22,12 +22,13 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: { 
-          clientName: { type: "string" }, 
+          clientName: { type: "string", description: "Nombre completo del cliente" }, 
+          phone: { type: "string", description: "Número de teléfono del cliente (Obligatorio)" },
           date: { type: "string", description: "YYYY-MM-DD" },
           time: { type: "string", description: "HH:MM" },
           notes: { type: "string" }
         },
-        required: ["clientName", "date", "time"]
+        required: ["clientName", "phone", "date", "time"]
       }
     }
   },
@@ -99,32 +100,82 @@ const TOOLS = [
   }
 ];
 
+const BACKEND_TOOL_NAMES = new Set([
+  'search_client_info',
+  'cancel_appointment',
+  'set_reminder',
+  'create_appointment'
+]);
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages, tenantId } = body;
+    const { messages, tenantId, isAdmin } = body;
 
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: 'El campo "messages" debe ser un array' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     let dynamicContext = "";
-    let basePrompt = "Eres un asistente IA altamente capacitado.";
+    let basePrompt = isAdmin ? "Eres un asistente administrativo." : "Eres un asistente virtual para clientes.";
     let settings: any = null;
+    let allowedToolNames = isAdmin 
+      ? ['search_client_info', 'cancel_appointment', 'set_reminder', 'refresh_calendar', 'navigate_to']
+      : ['create_appointment', 'open_booking_modal', 'refresh_calendar'];
 
     if (tenantId) {
       // 1. Obtener settings del negocio
       const { data } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
       settings = data;
-      const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
-      basePrompt = `
-Eres un asistente virtual agendador para el negocio "${settings?.business_name || 'tu negocio'}". 
-La fecha y hora actual es: ${currentDate}. Usa esto como referencia estricta para "hoy", "mañana" o fechas relativas.
+      
+      // Validar tokens de IA
+      const limit = settings?.ai_tokens_limit || 0;
+      const used = settings?.ai_tokens_used || 0;
+      
+      if (used >= limit) {
+        if (isAdmin) {
+          return NextResponse.json({ reply: "⚠️ Has alcanzado el límite de tokens de IA de tu plan. Actualiza tu suscripción en la sección de Facturación para reactivar a tu asistente.", toolCalls: [] });
+        } else {
+          return NextResponse.json({ reply: "El servicio de asistencia virtual no está disponible temporalmente. Por favor, contacte directamente al negocio.", toolCalls: [] });
+        }
+      }
 
-Aquí tienes la configuración específica del negocio:
-${settings?.ai_prompt || 'Sé amable y profesional.'}
-      `;
+      const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+      
+      if (isAdmin) {
+        basePrompt = `
+Eres el Concierge Administrativo (Co-Piloto) para el negocio "${settings?.business_name || 'tu negocio'}".
+La fecha actual es: ${currentDate}.
+Tu objetivo es ayudar al dueño a gestionar su negocio, buscar clientes, cancelar citas y establecer recordatorios.
+Tono: Ultra-profesional, elegante, directo, resolutivo ("Dark Luxury"). Sin saludos entusiastas innecesarios. No uses emojis excesivos.
+IMPORTANTE: Después de ejecutar una tool, responde siempre con un texto breve que confirme al dueño QUÉ hiciste (ej: "La cita ha sido cancelada.").
+        `;
+      } else {
+        basePrompt = `
+Eres el Concierge Virtual de alto nivel para el negocio "${settings?.business_name || 'tu negocio'}".
+La fecha actual es: ${currentDate}.
+Configuración del negocio: ${settings?.ai_prompt || 'Sé profesional y resolutivo.'}
+Tu objetivo es asistir a los clientes para agendar citas. No inventes precios ni servicios. Si te preguntan algo que no sabes o de soporte técnico, pide disculpas cordialmente e indica que solo puedes ayudar a agendar espacios.
+
+TONO ("Dark Luxury"):
+- Sé extremadamente educado, elegante, y conciso.
+- Evita el exceso de entusiasmo (nada de "¡Hola! ¡Claro que sí! ¡Me encantaría ayudarte!").
+- Usa frases como: "Será un placer asistirle.", "Con gusto agendaré su espacio.", "Permítame confirmar su reserva."
+
+REGLA CRÍTICA PARA AGENDAR (Tool: create_appointment):
+NUNCA ejecutes la tool 'create_appointment' sin tener el NÚMERO DE TELÉFONO del cliente.
+Si el cliente pide una cita y no da su teléfono, debes pedírselo amablemente.
+
+EJEMPLOS DE CONVERSACIÓN:
+User: "Quiero una cita mañana a las 10am"
+Assistant: "Será un placer. Para confirmar su reserva mañana a las 10:00, ¿podría proporcionarme su nombre y número de teléfono, por favor?"
+User: "Soy Juan, 555-1234"
+Assistant: (Ejecuta create_appointment) "Su espacio ha sido reservado con éxito, Juan. Lo esperamos."
+
+IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al cliente la acción realizada.
+        `;
+      }
 
       // 2. Obtener contexto de citas
       const now = new Date();
@@ -142,18 +193,18 @@ ${settings?.ai_prompt || 'Sé amable y profesional.'}
 
       dynamicContext = `\n\n--- CONTEXTO ACTUAL DEL NEGOCIO ---\n`;
       if (settings) {
-        dynamicContext += `Horario de apertura: ${settings.opening_time}\n`;
-        dynamicContext += `Horario de cierre: ${settings.closing_time}\n`;
+        dynamicContext += `Horario de atención: de ${settings.opening_time} a ${settings.closing_time}.\n`;
+        dynamicContext += `IMPORTANTE: No puedes agendar citas fuera de este horario. Las citas duran 1 hora.\n`;
       }
       
-      const todayAppointments = appointments?.filter(a => new Date(a.start_time).getDate() === now.getDate()) || [];
-      dynamicContext += `\nCITAS DE LA SEMANA (${appointments?.length || 0}):\n`;
-      appointments?.forEach((a: any) => {
-        const time = new Date(a.start_time).toLocaleString('es-MX', {weekday: 'short', hour: '2-digit', minute:'2-digit'});
-        dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.name || 'Anónimo'} | Estado: ${a.status}\n`;
-      });
-      
-      dynamicContext += `\nDIRECTRICES: Si te piden agendar, usa 'create_appointment'. Si te piden cancelar, usa 'cancel_appointment'. Después de hacerlo, usa 'refresh_calendar'. Nunca digas que tú no puedes hacerlo.`;
+      if (isAdmin) {
+        const todayAppointments = appointments?.filter(a => new Date(a.start_time).getDate() === now.getDate()) || [];
+        dynamicContext += `\nCITAS DE LA SEMANA (${appointments?.length || 0}):\n`;
+        appointments?.forEach((a: any) => {
+          const time = new Date(a.start_time).toLocaleString('es-MX', {weekday: 'short', hour: '2-digit', minute:'2-digit'});
+          dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.name || 'Anónimo'} | Estado: ${a.status}\n`;
+        });
+      }
     }
 
     let groqMessages: any[] = [
@@ -182,7 +233,7 @@ ${settings?.ai_prompt || 'Sé amable y profesional.'}
           messages: msgs,
           temperature: 0.6,
           max_tokens: 300,
-          tools: TOOLS,
+          tools: TOOLS.filter(t => allowedToolNames.includes(t.function.name)),
           tool_choice: "auto"
         }),
       });
@@ -200,8 +251,8 @@ ${settings?.ai_prompt || 'Sé amable y profesional.'}
 
     // Manejo de herramientas (Tool Calling)
     if (messageObj.tool_calls) {
-      const backendTools = messageObj.tool_calls.filter((tc: any) => ['search_client_info', 'cancel_appointment', 'set_reminder', 'create_appointment'].includes(tc.function.name));
-      const otherTools = messageObj.tool_calls.filter((tc: any) => !['search_client_info', 'cancel_appointment', 'set_reminder', 'create_appointment'].includes(tc.function.name));
+      const backendTools = messageObj.tool_calls.filter((tc: any) => BACKEND_TOOL_NAMES.has(tc.function.name));
+      const otherTools = messageObj.tool_calls.filter((tc: any) => !BACKEND_TOOL_NAMES.has(tc.function.name));
 
       frontendToolCalls = otherTools.map((tc: any) => ({
         name: tc.function.name,
@@ -242,10 +293,13 @@ ${settings?.ai_prompt || 'Sé amable y profesional.'}
 
               if (existingCustomer) {
                 customerId = existingCustomer.id;
+                if (args.phone) {
+                  await supabase.from('customers').update({ phone: args.phone }).eq('id', customerId);
+                }
               } else {
                 const { data: newCustomer, error } = await supabase
                   .from('customers')
-                  .insert({ tenant_id: tenantId, name: args.clientName })
+                  .insert({ tenant_id: tenantId, name: args.clientName, phone: args.phone || null })
                   .select()
                   .single();
                 if (!error && newCustomer) customerId = newCustomer.id;
@@ -322,12 +376,25 @@ ${settings?.ai_prompt || 'Sé amable y profesional.'}
       }
     }
 
-    if (!reply && frontendToolCalls.length > 0) {
-      if (frontendToolCalls.some((t: any) => t.name === 'refresh_calendar')) {
-        reply = "¡Listo! He actualizado el calendario con tu solicitud. ✨";
+    if (!reply) {
+      const createdAppt = frontendToolCalls.length === 0;
+      const refreshed = frontendToolCalls.some((t: any) => t.name === 'refresh_calendar');
+
+      if (refreshed && createdAppt) {
+        reply = "Listo, he procesado tu solicitud. ✨";
+      } else if (refreshed) {
+        reply = "¡Listo! He actualizado el calendario. ✨";
       } else {
         reply = "¡Claro! Procesando tu solicitud... ✨";
       }
+    }
+
+    if (tenantId) {
+      // Incrementar tokens usados de manera asíncrona
+      const used = settings?.ai_tokens_used || 0;
+      supabase.from('business_settings').update({ ai_tokens_used: used + 1 }).eq('tenant_id', tenantId).then(({error}) => {
+        if (error) console.error('[API /assistant] Error incrementing tokens:', error);
+      });
     }
 
     return NextResponse.json({ reply, toolCalls: frontendToolCalls });

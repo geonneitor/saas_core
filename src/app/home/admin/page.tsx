@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { Button } from '@/components/ui/button';
+import { DeleteTenantForm } from './DeleteTenantForm';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -11,7 +13,7 @@ export default async function AdminPage() {
   // Server Action to create a new tenant
   async function createTenant(formData: FormData) {
     'use server';
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const name = formData.get('name') as string;
     const subdomain = formData.get('subdomain') as string;
     
@@ -35,11 +37,31 @@ export default async function AdminPage() {
   async function deleteTenant(formData: FormData) {
     'use server';
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('[deleteTenant] No auth');
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profile?.role !== 'super_admin') {
+      console.error('[deleteTenant] Not super-admin');
+      return;
+    }
+
     const id = formData.get('id') as string;
     
-    const { error } = await supabase.from('tenants').delete().eq('id', id);
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase.from('tenants').delete().eq('id', id);
     if (error) console.error("Error deleting tenant:", error);
-    revalidatePath('/admin');
+    revalidatePath('/home/admin');
+    revalidatePath('/', 'layout');
   }
 
   return (
@@ -81,12 +103,7 @@ export default async function AdminPage() {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${tenant.is_active ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                 {tenant.is_active ? 'Activo' : 'Suspendido'}
               </span>
-              <form action={deleteTenant}>
-                <input type="hidden" name="id" value={tenant.id} />
-                <button type="submit" className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-md text-xs font-semibold border border-red-200 transition-colors">
-                  Eliminar
-                </button>
-              </form>
+              <DeleteTenantForm tenantId={tenant.id} tenantName={tenant.name} action={deleteTenant} />
             </div>
           </div>
         ))}

@@ -13,7 +13,7 @@ const AVATARS = [
   { id: 'star', name: 'Estrella (Premium)' }
 ];
 
-export function AvatarSelector({ tenantId, currentAvatar }: { tenantId: string, currentAvatar: string }) {
+export function AvatarSelector({ tenantId, currentAvatar, isAdmin = false }: { tenantId: string, currentAvatar: string, isAdmin?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -23,6 +23,17 @@ export function AvatarSelector({ tenantId, currentAvatar }: { tenantId: string, 
     setIsUpdating(false);
     setIsOpen(false);
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 text-neutral-700 text-[13px] font-bold rounded-full border border-neutral-200 cursor-default shadow-sm">
+        <div className="w-5 h-5 flex items-center justify-center overflow-hidden rounded-full">
+           <div className="scale-[0.4]"><AvatarSystem variant={currentAvatar as any} isActive={false} /></div>
+        </div>
+        <span>IA Asistente</span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

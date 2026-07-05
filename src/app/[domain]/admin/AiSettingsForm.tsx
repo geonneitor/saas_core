@@ -24,9 +24,9 @@ export default function AiSettingsForm({
   initialAvatar: string;
   initialGroqApiKey: string;
 }) {
-  const [prompt, setPrompt] = useState(initialPrompt);
-  const [avatar, setAvatar] = useState(initialAvatar);
-  const [groqApiKey, setGroqApiKey] = useState(initialGroqApiKey);
+  const [prompt, setPrompt] = useState(initialPrompt ?? '');
+  const [avatar, setAvatar] = useState(initialAvatar ?? 'lotito');
+  const [groqApiKey, setGroqApiKey] = useState(initialGroqApiKey ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 

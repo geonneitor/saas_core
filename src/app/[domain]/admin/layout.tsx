@@ -11,12 +11,14 @@ export default async function AdminLayout(props: {
   const supabase = await createClient();
 
   // 1. Protección de ruta (Solo usuarios autenticados)
+  // TEMPORAL: Comentado para poder ver la UI sin login en desarrollo
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    // Si no está autenticado, lo mandamos a la página principal del tenant
-    // (O al login si tuvieras la ruta específica)
-    redirect('/');
-  }
+  // if (error || !user) {
+  //   redirect('/');
+  // }
+  
+  // Usuario simulado temporal para que la UI funcione
+  const mockUser = user || { email: 'admin@negocio.com' };
 
   // 2. Validar que el tenant existe y obtener info
   const { data: tenant } = await supabase
@@ -40,7 +42,7 @@ export default async function AdminLayout(props: {
           </div>
           {/* Menú de Usuario / Perfil en el Topbar */}
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-neutral-600">{user.email}</span>
+            <span className="text-sm font-medium text-neutral-600">{mockUser.email}</span>
             <div className="w-9 h-9 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-sm">
               {tenant.name.charAt(0).toUpperCase()}
             </div>

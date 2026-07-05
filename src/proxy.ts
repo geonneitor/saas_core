@@ -40,10 +40,16 @@ export default async function middleware(req: NextRequest) {
 
   // 1. REESCRITURA PARA EL DOMINIO PRINCIPAL (Nuestra Landing Page del SaaS)
   if (isRootDomain) {
-    response = NextResponse.rewrite(new URL(`/home${path}`, req.url));
+    const finalPath = path === '/' ? '/home' : `/home${path}`;
+    console.log(`[PROXY] Rewriting ROOT DOMAIN request for ${hostname}${path} -> ${finalPath}`);
+    response = NextResponse.rewrite(new URL(finalPath, req.url));
   } else {
     // 2. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
-    response = NextResponse.rewrite(new URL(`/${hostname}${path}`, req.url));
+    // Remover .localhost del hostname para buscar el subdomain limpio en la BD localmente
+    const cleanSubdomain = hostname.replace('.localhost', '');
+    const finalPath = path === '/' ? `/${cleanSubdomain}` : `/${cleanSubdomain}${path}`;
+    console.log(`[PROXY] Rewriting TENANT request for ${hostname}${path} -> ${finalPath}`);
+    response = NextResponse.rewrite(new URL(finalPath, req.url));
   }
 
   // 3. ACTUALIZAR SESIÓN DE SUPABASE
