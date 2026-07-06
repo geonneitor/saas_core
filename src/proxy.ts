@@ -28,10 +28,13 @@ export default async function middleware(req: NextRequest) {
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/:\d+$/, '') || 'localhost';
 
   // Extraemos el subdominio (Si el host es mibarberia.localhost, el subdominio es mibarberia)
-  const isRootDomain = hostname === rootDomain;
+  let isRootDomain = hostname === rootDomain;
   
-  // Si estamos en Vercel, a veces asigna dominios como .vercel.app, hay que tenerlo en cuenta después,
-  // por ahora si no es el rootDomain, asumimos que es un tenant.
+  // Si estamos en Vercel y accedemos vía .vercel.app, tratarlo como Root Domain 
+  // para que el superadmin pueda entrar al panel principal de creación de tenants.
+  if (hostname.endsWith('.vercel.app')) {
+    isRootDomain = true;
+  }
   
   // Ruta original que el usuario pidió (ej: "/", "/reservar", "/admin")
   const path = url.pathname;
@@ -45,8 +48,11 @@ export default async function middleware(req: NextRequest) {
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } else {
     // 2. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
-    // Remover .localhost del hostname para buscar el subdomain limpio en la BD localmente
-    const cleanSubdomain = hostname.replace('.localhost', '');
+    // Remover el rootDomain y .localhost del hostname para buscar el subdomain limpio en la BD localmente
+    const cleanSubdomain = hostname
+      .replace(`.${rootDomain}`, '')
+      .replace('.localhost', '');
+      
     const finalPath = path === '/' ? `/${cleanSubdomain}` : `/${cleanSubdomain}${path}`;
     console.log(`[PROXY] Rewriting TENANT request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
