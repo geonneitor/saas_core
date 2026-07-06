@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  checkAvailability,
+  bookAppointment,
+  cancelAppointment,
+  rescheduleAppointment,
+  getBusinessStats
+} from '@/lib/ai/tools';
 
 const TOOLS = [
   {
@@ -17,55 +24,32 @@ const TOOLS = [
   {
     type: "function",
     function: {
-      name: "create_appointment",
-      description: "Crea una cita oficial en la base de datos para el cliente.",
+      name: "check_availability",
+      description: "Revisa la disponibilidad en el calendario para una fecha específica (YYYY-MM-DD). Llama a esto SIEMPRE antes de agendar para asegurarte de que haya espacio y esté dentro del horario de apertura.",
       parameters: {
         type: "object",
         properties: { 
-          clientName: { type: "string", description: "Nombre completo del cliente" }, 
-          phone: { type: "string", description: "Número de teléfono del cliente (Obligatorio)" },
+          date: { type: "string", description: "La fecha a consultar en formato YYYY-MM-DD" }
+        },
+        required: ["date"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "book_appointment",
+      description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente.",
+      parameters: {
+        type: "object",
+        properties: { 
+          customerName: { type: "string", description: "Nombre completo del cliente" }, 
+          customerEmail: { type: "string", description: "Email del cliente (opcional, usar si lo da)" },
           date: { type: "string", description: "YYYY-MM-DD" },
           time: { type: "string", description: "HH:MM" },
           notes: { type: "string" }
         },
-        required: ["clientName", "phone", "date", "time"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "refresh_calendar",
-      description: "Actualiza el calendario visual. Úsalo después de agendar o cancelar.",
-      parameters: { type: "object", properties: {} }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "open_booking_modal",
-      description: "Abre el formulario visual en pantalla para agendar una nueva cita.",
-      parameters: {
-        type: "object",
-        properties: { 
-          clientName: { type: "string" }, 
-          notes: { type: "string" },
-          suggestedTime: { type: "string", description: "Hora sugerida en formato HH:MM" }
-        }
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "search_client_info",
-      description: "Busca en la base de datos la información y el historial de un cliente por su nombre.",
-      parameters: {
-        type: "object",
-        properties: {
-          searchQuery: { type: "string", description: "Nombre o parte del nombre a buscar." }
-        },
-        required: ["searchQuery"]
+        required: ["customerName", "date", "time"]
       }
     }
   },
@@ -73,38 +57,59 @@ const TOOLS = [
     type: "function",
     function: {
       name: "cancel_appointment",
-      description: "Cancela o elimina una cita del calendario de hoy.",
+      description: "Cancela una cita dado su ID.",
       parameters: {
         type: "object",
         properties: {
-          clientName: { type: "string", description: "El nombre del cliente cuya cita se va a cancelar" }
+          appointmentId: { type: "string", description: "El ID de la cita a cancelar" }
         },
-        required: ["clientName"]
+        required: ["appointmentId"]
       }
     }
   },
   {
     type: "function",
     function: {
-      name: "set_reminder",
-      description: "Establece un recordatorio para el dueño del negocio.",
+      name: "reschedule_appointment",
+      description: "Reagenda una cita dado su ID, a una nueva fecha y hora.",
       parameters: {
         type: "object",
         properties: {
-          task: { type: "string", description: "Lo que hay que recordar" },
-          time: { type: "string", description: "Hora del recordatorio" }
+          appointmentId: { type: "string", description: "El ID de la cita a reagendar" },
+          newDate: { type: "string", description: "YYYY-MM-DD" },
+          newTime: { type: "string", description: "HH:MM" }
         },
-        required: ["task"]
+        required: ["appointmentId", "newDate", "newTime"]
       }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_business_stats",
+      description: "Obtiene estadísticas del negocio como total de clientes y citas pendientes. Úsalo cuando te pidan un resumen, consejo o estatus del negocio.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "refresh_calendar",
+      description: "Actualiza el calendario visual. Úsalo siempre después de agendar, cancelar o reagendar.",
+      parameters: { type: "object", properties: {} }
     }
   }
 ];
 
 const BACKEND_TOOL_NAMES = new Set([
-  'search_client_info',
+  'check_availability',
+  'book_appointment',
   'cancel_appointment',
-  'set_reminder',
-  'create_appointment'
+  'reschedule_appointment',
+  'get_business_stats'
 ]);
 
 export async function POST(req: Request) {
@@ -121,8 +126,8 @@ export async function POST(req: Request) {
     let basePrompt = isAdmin ? "Eres un asistente administrativo." : "Eres un asistente virtual para clientes.";
     let settings: any = null;
     let allowedToolNames = isAdmin 
-      ? ['search_client_info', 'cancel_appointment', 'set_reminder', 'refresh_calendar', 'navigate_to']
-      : ['create_appointment', 'open_booking_modal', 'refresh_calendar'];
+      ? ['check_availability', 'book_appointment', 'cancel_appointment', 'reschedule_appointment', 'get_business_stats', 'refresh_calendar', 'navigate_to']
+      : ['check_availability', 'book_appointment', 'cancel_appointment', 'refresh_calendar'];
 
     if (tenantId) {
       // 1. Obtener settings del negocio
@@ -145,65 +150,66 @@ export async function POST(req: Request) {
       
       if (isAdmin) {
         basePrompt = `
-Eres el Concierge Administrativo (Co-Piloto) para el negocio "${settings?.business_name || 'tu negocio'}".
-La fecha actual es: ${currentDate}.
-Tu objetivo es ayudar al dueño a gestionar su negocio, buscar clientes, cancelar citas y establecer recordatorios.
-Tono: Ultra-profesional, elegante, directo, resolutivo ("Dark Luxury"). Sin saludos entusiastas innecesarios. No uses emojis excesivos.
-IMPORTANTE: Después de ejecutar una tool, responde siempre con un texto breve que confirme al dueño QUÉ hiciste (ej: "La cita ha sido cancelada.").
+Eres el Concierge Administrativo (Co-Piloto Súper IA) para el negocio "${settings?.business_name || 'tu negocio'}".
+La fecha y hora actual es: ${currentDate}.
+Tu objetivo es ayudar al dueño a gestionar su negocio: revisar el calendario, agendar citas, reagendar, cancelar y analizar métricas (usando get_business_stats).
+Tono: Ultra-profesional, elegante, directo, resolutivo ("Dark Luxury").
+IMPORTANTE: 
+1. Si te piden reagendar o cancelar y no sabes el ID de la cita, primero consulta la disponibilidad del día o busca la cita, pero NUNCA inventes IDs.
+2. Después de ejecutar una herramienta de escritura, responde con un resumen de lo que hiciste (ej: "He cancelado la cita de Juan").
         `;
       } else {
         basePrompt = `
 Eres el Concierge Virtual de alto nivel para el negocio "${settings?.business_name || 'tu negocio'}".
 La fecha actual es: ${currentDate}.
 Configuración del negocio: ${settings?.ai_prompt || 'Sé profesional y resolutivo.'}
-Tu objetivo es asistir a los clientes para agendar citas. No inventes precios ni servicios. Si te preguntan algo que no sabes o de soporte técnico, pide disculpas cordialmente e indica que solo puedes ayudar a agendar espacios.
+Tu objetivo es asistir a los clientes para agendar, revisar y cancelar citas.
+No inventes precios ni servicios. Si te preguntan algo fuera de agendar espacios, pide disculpas cordialmente.
 
 TONO ("Dark Luxury"):
 - Sé extremadamente educado, elegante, y conciso.
-- Evita el exceso de entusiasmo (nada de "¡Hola! ¡Claro que sí! ¡Me encantaría ayudarte!").
-- Usa frases como: "Será un placer asistirle.", "Con gusto agendaré su espacio.", "Permítame confirmar su reserva."
+- Evita el exceso de entusiasmo (nada de "¡Hola! ¡Claro que sí!").
+- Usa frases como: "Será un placer asistirle.", "Con gusto agendaré su espacio."
 
-REGLA CRÍTICA PARA AGENDAR (Tool: create_appointment):
-NUNCA ejecutes la tool 'create_appointment' sin tener el NÚMERO DE TELÉFONO del cliente.
-Si el cliente pide una cita y no da su teléfono, debes pedírselo amablemente.
+REGLA CRÍTICA PARA AGENDAR (Tool: book_appointment):
+NUNCA ejecutes la tool 'book_appointment' sin tener el NOMBRE del cliente y una HORA acordada válida.
+Si el cliente solo dice "Quiero una cita mañana", primero revisa la disponibilidad (check_availability) y ofrécele horarios dentro de la franja. Luego pídele su nombre para confirmar.
 
-EJEMPLOS DE CONVERSACIÓN:
-User: "Quiero una cita mañana a las 10am"
-Assistant: "Será un placer. Para confirmar su reserva mañana a las 10:00, ¿podría proporcionarme su nombre y número de teléfono, por favor?"
-User: "Soy Juan, 555-1234"
-Assistant: (Ejecuta create_appointment) "Su espacio ha sido reservado con éxito, Juan. Lo esperamos."
-
-IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al cliente la acción realizada.
+IMPORTANTE: Después de ejecutar una tool, responde confirmando al cliente la acción realizada.
         `;
       }
 
-      // 2. Obtener contexto de citas
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const endOfWeek = new Date(startOfDay);
-      endOfWeek.setDate(endOfWeek.getDate() + 7);
-
-      const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*, customers(name, phone)')
-        .eq('tenant_id', tenantId)
-        .gte('start_time', startOfDay.toISOString())
-        .lte('start_time', endOfWeek.toISOString())
-        .order('start_time', { ascending: true });
-
-      dynamicContext = `\n\n--- CONTEXTO ACTUAL DEL NEGOCIO ---\n`;
+      // 2. Obtener contexto inicial dinámico
+      dynamicContext = `\n\n--- REGLAS Y CONTEXTO DEL NEGOCIO ---\n`;
       if (settings) {
         dynamicContext += `Horario de atención: de ${settings.opening_time} a ${settings.closing_time}.\n`;
-        dynamicContext += `IMPORTANTE: No puedes agendar citas fuera de este horario. Las citas duran 1 hora.\n`;
+        dynamicContext += `IMPORTANTE: Las citas duran 1 hora por defecto. No agendes fuera de este horario laboral.\n`;
       }
       
       if (isAdmin) {
-        const todayAppointments = appointments?.filter(a => new Date(a.start_time).getDate() === now.getDate()) || [];
-        dynamicContext += `\nCITAS DE LA SEMANA (${appointments?.length || 0}):\n`;
-        appointments?.forEach((a: any) => {
-          const time = new Date(a.start_time).toLocaleString('es-MX', {weekday: 'short', hour: '2-digit', minute:'2-digit'});
-          dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.name || 'Anónimo'} | Estado: ${a.status}\n`;
-        });
+        // Le pasamos las citas de hoy por defecto para que las tenga sin buscar si le preguntan rápido
+        const startOfDay = new Date();
+        startOfDay.setHours(0,0,0,0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
+        const { data: appointments } = await supabase
+          .from('appointments')
+          .select('id, status, start_time, customers(name)')
+          .eq('tenant_id', tenantId)
+          .gte('start_time', startOfDay.toISOString())
+          .lt('start_time', endOfDay.toISOString())
+          .order('start_time', { ascending: true });
+
+        dynamicContext += `\nCITAS PARA HOY:\n`;
+        if (appointments && appointments.length > 0) {
+          appointments.forEach((a: any) => {
+            const time = new Date(a.start_time).toLocaleString('es-MX', {hour: '2-digit', minute:'2-digit'});
+            dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.name || 'Anónimo'} | Estado: ${a.status}\n`;
+          });
+        } else {
+          dynamicContext += `No hay citas para hoy.\n`;
+        }
       }
     }
 
@@ -231,8 +237,8 @@ IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al clien
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages: msgs,
-          temperature: 0.6,
-          max_tokens: 300,
+          temperature: 0.3,
+          max_tokens: 400,
           tools: TOOLS.filter(t => allowedToolNames.includes(t.function.name)),
           tool_choice: "auto"
         }),
@@ -249,7 +255,7 @@ IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al clien
     let reply = messageObj.content || '';
     let frontendToolCalls: any[] = [];
 
-    // Manejo de herramientas (Tool Calling)
+    // Bucle de Tool Calling
     if (messageObj.tool_calls) {
       const backendTools = messageObj.tool_calls.filter((tc: any) => BACKEND_TOOL_NAMES.has(tc.function.name));
       const otherTools = messageObj.tool_calls.filter((tc: any) => !BACKEND_TOOL_NAMES.has(tc.function.name));
@@ -259,7 +265,7 @@ IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al clien
         arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) : {}
       }));
 
-      // Búsqueda y Acciones en Base de Datos
+      // Ejecutar funciones locales si hay backendTools
       if (backendTools.length > 0 && tenantId) {
         groqMessages.push(messageObj); 
         
@@ -267,90 +273,64 @@ IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al clien
           try {
             const args = JSON.parse(tc.function.arguments);
             
-            if (tc.function.name === 'search_client_info') {
-              const { data: clients } = await supabase
-                .from('customers')
-                .select('id, name, phone, appointments(status, start_time)')
-                .eq('tenant_id', tenantId)
-                .ilike('name', `%${args.searchQuery}%`);
-              
+            if (tc.function.name === 'check_availability') {
+              const res = await checkAvailability(tenantId, args.date);
               groqMessages.push({
                 role: 'tool',
                 tool_call_id: tc.id,
                 name: tc.function.name,
-                content: clients?.length ? JSON.stringify(clients) : "Cliente no encontrado."
+                content: JSON.stringify(res)
               });
             }
 
-            if (tc.function.name === 'create_appointment') {
-              let customerId;
-              const { data: existingCustomer } = await supabase
-                .from('customers')
-                .select('id')
-                .eq('tenant_id', tenantId)
-                .ilike('name', `%${args.clientName}%`)
-                .maybeSingle();
-
-              if (existingCustomer) {
-                customerId = existingCustomer.id;
-                if (args.phone) {
-                  await supabase.from('customers').update({ phone: args.phone }).eq('id', customerId);
-                }
-              } else {
-                const { data: newCustomer, error } = await supabase
-                  .from('customers')
-                  .insert({ tenant_id: tenantId, name: args.clientName, phone: args.phone || null })
-                  .select()
-                  .single();
-                if (!error && newCustomer) customerId = newCustomer.id;
-              }
-
-              if (customerId) {
-                const startDateTime = new Date(`${args.date}T${args.time}`);
-                const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
-                const { data: appt, error: apptError } = await supabase.from('appointments').insert({
-                  tenant_id: tenantId,
-                  customer_id: customerId,
-                  title: `Cita con ${args.clientName}`,
-                  start_time: startDateTime.toISOString(),
-                  end_time: endDateTime.toISOString(),
-                  status: 'scheduled',
-                  notes: args.notes || ''
-                }).select().single();
-
-                if (apptError) {
-                  console.error('[create_appointment] DB error:', apptError);
-                  groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'create_appointment', content: `Error al agendar cita: ${apptError.message}` });
-                } else {
-                  groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'create_appointment', content: `Cita agendada exitosamente (ID: ${appt.id}) para ${args.clientName} el ${args.date} a las ${args.time}.` });
-                }
-              } else {
-                groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'create_appointment', content: 'Error al crear cliente.' });
+            if (tc.function.name === 'book_appointment') {
+              const res = await bookAppointment(tenantId, args.customerName, args.customerEmail, args.date, args.time, args.notes);
+              groqMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                name: tc.function.name,
+                content: JSON.stringify(res)
+              });
+              // Si agendamos, obligamos al frontend a refrescar
+              if (res.success && !frontendToolCalls.some(t => t.name === 'refresh_calendar')) {
+                frontendToolCalls.push({ name: 'refresh_calendar', arguments: {} });
               }
             }
-            
+
             if (tc.function.name === 'cancel_appointment') {
-              // MVP de cancelación: Busca la cita de ese cliente hoy y la borra
-              // En un prod real usaríamos el ID de la cita. Aquí borramos la de ese cliente.
-              const { data: customer } = await supabase.from('customers').select('id').ilike('name', `%${args.clientName}%`).eq('tenant_id', tenantId).maybeSingle();
-              if (customer) {
-                 const { data: deleted, error: delError } = await supabase.from('appointments').delete().eq('customer_id', customer.id).eq('tenant_id', tenantId).select();
-                 
-                 if (delError) {
-                   groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: `Error al cancelar: ${delError.message}` });
-                 } else if (deleted && deleted.length === 0) {
-                   groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: 'No se encontraron citas activas para ese cliente.' });
-                 } else {
-                   groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: `Cita(s) cancelada(s): ${deleted.length} registro(s) eliminado(s).` });
-                 }
-              } else {
-                 groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'cancel_appointment', content: 'No se encontró al cliente.' });
+              const res = await cancelAppointment(tenantId, args.appointmentId);
+              groqMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                name: tc.function.name,
+                content: JSON.stringify(res)
+              });
+              if (res.success && !frontendToolCalls.some(t => t.name === 'refresh_calendar')) {
+                frontendToolCalls.push({ name: 'refresh_calendar', arguments: {} });
               }
             }
 
-            if (tc.function.name === 'set_reminder') {
-              // MVP de recordatorios
-              groqMessages.push({ role: 'tool', tool_call_id: tc.id, name: 'set_reminder', content: 'Recordatorio guardado en memoria.' });
+            if (tc.function.name === 'reschedule_appointment') {
+              const res = await rescheduleAppointment(tenantId, args.appointmentId, args.newDate, args.newTime);
+              groqMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                name: tc.function.name,
+                content: JSON.stringify(res)
+              });
+              if (res.success && !frontendToolCalls.some(t => t.name === 'refresh_calendar')) {
+                frontendToolCalls.push({ name: 'refresh_calendar', arguments: {} });
+              }
+            }
+
+            if (tc.function.name === 'get_business_stats') {
+              const res = await getBusinessStats(tenantId);
+              groqMessages.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                name: tc.function.name,
+                content: JSON.stringify(res)
+              });
             }
 
           } catch (e) {
@@ -358,34 +338,35 @@ IMPORTANTE: Después de ejecutar una tool, responde siempre confirmando al clien
           }
         }
         
+        // Segunda llamada a Groq con los resultados de las herramientas
         data = await callGroq(groqMessages);
         messageObj = data.choices[0].message;
         reply = messageObj.content || reply;
         
-        // Capturar tool_calls de la segunda iteración (ej: refresh_calendar)
+        // Capturar tool_calls adicionales de frontend que Groq pueda escupir en la 2da vuelta
         if (messageObj.tool_calls) {
           const secondFrontendTools = messageObj.tool_calls
-            .filter((t: any) => t.function.name === 'refresh_calendar')
+            .filter((t: any) => !BACKEND_TOOL_NAMES.has(t.function.name))
             .map((t: any) => ({
               id: t.id,
               name: t.function.name,
               arguments: JSON.parse(t.function.arguments)
             }));
-          frontendToolCalls.push(...secondFrontendTools);
+          
+          secondFrontendTools.forEach((st: any) => {
+             if (!frontendToolCalls.some(ft => ft.name === st.name)) {
+                frontendToolCalls.push(st);
+             }
+          });
         }
       }
     }
 
     if (!reply) {
-      const createdAppt = frontendToolCalls.length === 0;
-      const refreshed = frontendToolCalls.some((t: any) => t.name === 'refresh_calendar');
-
-      if (refreshed && createdAppt) {
-        reply = "Listo, he procesado tu solicitud. ✨";
-      } else if (refreshed) {
+      if (frontendToolCalls.some((t: any) => t.name === 'refresh_calendar')) {
         reply = "¡Listo! He actualizado el calendario. ✨";
       } else {
-        reply = "¡Claro! Procesando tu solicitud... ✨";
+        reply = "Hecho. ✨";
       }
     }
 
