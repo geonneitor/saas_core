@@ -9,6 +9,7 @@ import AiAssistantChat from '@/components/AiAssistantChat';
 import { BookingModal } from '@/components/BookingModal';
 import { AvatarSelector } from '@/components/AvatarSelector';
 import { AvatarSystem } from '@/components/avatars/AvatarSystem';
+import { OpenChatButton } from '@/components/OpenChatButton';
 
 export default async function TenantLandingPage(props: { params: Promise<{ domain: string }> }) {
   const params = await props.params;
@@ -83,16 +84,7 @@ export default async function TenantLandingPage(props: { params: Promise<{ domai
           </p>
           
           <div className="pt-8">
-            <button 
-              onClick={() => document.querySelector('button[title="Dictado por voz"]')?.parentElement?.parentElement?.parentElement?.parentElement?.querySelector('button')?.click()}
-              className="group relative inline-flex items-center justify-center px-8 py-4 font-sans font-semibold tracking-widest text-on-primary uppercase text-sm bg-gradient-to-r from-gold-light to-gold-primary rounded-full overflow-hidden transition-all hover:scale-105 shadow-gold-glow"
-            >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-              <span className="relative flex items-center gap-3">
-                <Sparkles className="w-4 h-4" />
-                Agendar con IA
-              </span>
-            </button>
+            <OpenChatButton />
           </div>
         </div>
 
