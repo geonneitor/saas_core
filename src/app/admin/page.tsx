@@ -3,8 +3,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { Button } from '@/components/ui/button';
 import { DeleteTenantForm } from './DeleteTenantForm';
+import { ArrowRight } from 'lucide-react';
 
 export default async function AdminPage() {
+  const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
   const supabase = await createClient();
   
   // Fetch existing tenants
@@ -15,7 +17,9 @@ export default async function AdminPage() {
     'use server';
     const supabase = createAdminClient();
     const name = formData.get('name') as string;
-    const subdomain = formData.get('subdomain') as string;
+    const rawSubdomain = formData.get('subdomain') as string;
+    // Extraer solo la parte del subdominio limpio
+    const subdomain = rawSubdomain.split('.')[0].toLowerCase().replace(/[^a-z0-9-]/g, '');
     
     const { data: tenant, error } = await supabase.from('tenants').insert({ name, subdomain, is_active: true }).select().single();
     
@@ -95,8 +99,14 @@ export default async function AdminPage() {
           <div key={tenant.id} className="flex items-center justify-between p-4 border rounded-xl bg-card hover:border-primary/50 transition-colors">
             <div>
               <p className="font-semibold text-lg">{tenant.name}</p>
-              <a href={`http://${tenant.subdomain}:3000`} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
-                {tenant.subdomain}:3000
+              <a 
+                href={`${process.env.NODE_ENV === 'development' ? 'http' : 'https'}://${tenant.subdomain}.${domain}${process.env.NODE_ENV === 'development' ? '?demo_admin=true' : ''}`}
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-sm text-blue-500 hover:underline flex items-center gap-2"
+              >
+                {tenant.subdomain}.{domain}
+                <ArrowRight className="w-3 h-3" />
               </a>
             </div>
             <div className="flex gap-2 items-center">
