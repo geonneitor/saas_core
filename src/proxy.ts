@@ -24,31 +24,45 @@ export default async function middleware(req: NextRequest) {
   // Limpiamos el puerto en local para extraer solo el dominio
   hostname = hostname.replace(/:\d+$/, '');
 
-  // Nuestro dominio base definido en .env (ej. localhost o tusaas.com)
+  // Nuestro dominio base definido en .env (ej. localhost o geo-dev.online)
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/:\d+$/, '') || 'localhost';
 
-  // Extraemos el subdominio (Si el host es mibarberia.localhost, el subdominio es mibarberia)
-  let isRootDomain = hostname === rootDomain;
-  
-  // Si estamos en Vercel y accedemos vía .vercel.app, tratarlo como Root Domain 
-  // para que el superadmin pueda entrar al panel principal de creación de tenants.
-  if (hostname.endsWith('.vercel.app')) {
-    isRootDomain = true;
-  }
+  // Determinamos si la petición debe ir al Panel de Administración (SaaS Core)
+  // Es Admin si:
+  // 1. Entran a app.tudominio.com (ej. app.geo-dev.online)
+  // 2. Entran al dominio de Vercel directamente (*.vercel.app)
+  // 3. Entran directamente a localhost (para entorno de desarrollo local)
+  const isAdminApp = 
+    hostname === `app.${rootDomain}` || 
+    hostname.endsWith('.vercel.app') ||
+    hostname === rootDomain || 
+    hostname === `www.${rootDomain}`;
   
   // Ruta original que el usuario pidió (ej: "/", "/reservar", "/admin")
   const path = url.pathname;
 
   let response: NextResponse;
 
-  // 1. REESCRITURA PARA EL DOMINIO PRINCIPAL (Nuestra Landing Page del SaaS)
-  if (isRootDomain) {
-    const finalPath = path === '/' ? '/home' : `/home${path}`;
-    console.log(`[PROXY] Rewriting ROOT DOMAIN request for ${hostname}${path} -> ${finalPath}`);
+  // 1. REESCRITURA PARA EL PANEL DE ADMINISTRACIÓN (SaaS Core en app.geo-dev.online)
+  if (isAdminApp) {
+    let finalPath: string;
+    
+    if (path === '/') {
+      // Landing page interna o dashboard en la raíz del Admin
+      finalPath = '/home';
+    } else if (path.startsWith('/admin')) {
+      // Panel de administración general del SaaS
+      finalPath = path;
+    } else {
+      // Evitar duplicar /home si el path ya lo trae
+      finalPath = path.startsWith('/home') ? path : `/home${path}`;
+    }
+
+    console.log(`[PROXY] Rewriting ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } else {
     // 2. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
-    // Remover el rootDomain y .localhost del hostname para buscar el subdomain limpio en la BD localmente
+    // Extraemos el subdominio limpio. Ej: salondeunas.geo-dev.online -> salondeunas
     const cleanSubdomain = hostname
       .replace(`.${rootDomain}`, '')
       .replace('.localhost', '');
