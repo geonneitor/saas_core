@@ -73,7 +73,11 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
     .single();
 
   if (!tenantData || tenantData.owner_id !== user.id) {
-    return { success: false, error: 'Sin permisos de administrador para este tenant' };
+    // If not owner, check if super_admin
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (profile?.role !== 'super_admin') {
+      return { success: false, error: 'Sin permisos de administrador para este tenant' };
+    }
   }
   
   try {
