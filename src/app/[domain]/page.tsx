@@ -1,17 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Calendar, Clock, Phone, User, Plus, Settings, Sparkles } from 'lucide-react';
 
 import AiAssistantChat from '@/components/AiAssistantChat';
 import { BookingModal } from '@/components/BookingModal';
 import { AvatarSelector } from '@/components/AvatarSelector';
-import { AvatarSystem } from '@/components/avatars/AvatarSystem';
-import { OpenChatButton } from '@/components/OpenChatButton';
 
-export default async function TenantLandingPage(props: { params: Promise<{ domain: string }> }) {
+import { PremiumHero } from '@/components/tenant-ui/PremiumHero';
+import { DynamicManifesto } from '@/components/tenant-ui/DynamicManifesto';
+import { StyleSelector } from '@/components/tenant-ui/StyleSelector';
+
+export default async function TenantLandingPage(props: { 
+  params: Promise<{ domain: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const params = await props.params;
   const domain = params.domain;
   const supabase = await createClient();
@@ -29,13 +31,30 @@ export default async function TenantLandingPage(props: { params: Promise<{ domai
   }
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isAdmin = !!(user && tenant.owner_id === user.id);
+  let isAdmin = !!(user && tenant.owner_id === user.id);
+  
+  if (user && !isAdmin) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (profile?.role === 'super_admin') {
+      isAdmin = true;
+    }
+  }
+  const searchParams = await props.searchParams;
+  if (process.env.NODE_ENV === 'development' && searchParams.demo_admin === 'true') {
+    isAdmin = true;
+  }
+  
+  console.log('[TENANT LANDING] User ID:', user?.id, '| Role check isAdmin:', isAdmin, '| Tenant Owner:', tenant.owner_id);
 
   const settings = Array.isArray(tenant.business_settings) 
     ? tenant.business_settings[0] 
     : tenant.business_settings;
+    
   const aiAvatar = settings?.ai_avatar || 'lotito';
   const tagline = settings?.brand_tagline || 'Excelencia y exclusividad en cada detalle.';
+  const theme = settings?.theme || 'dark-luxury';
+  const font = settings?.font || 'serif';
+  const heroImage = settings?.hero_image || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=1200&auto=format&fit=crop';
   
   // Extract features to show in the landing
   const features = [
@@ -45,80 +64,60 @@ export default async function TenantLandingPage(props: { params: Promise<{ domai
   ];
 
   return (
-    <div className="min-h-screen bg-background font-sans selection:bg-primary selection:text-on-primary overflow-x-hidden">
-      
+    <div className={`min-h-screen ${theme === 'light-minimal' ? 'bg-[#fafafa]' : 'bg-[#111317]'} selection:bg-primary selection:text-on-primary overflow-x-hidden`}>
+      {isAdmin && (
+        <StyleSelector 
+          tenantId={tenant.id} 
+          currentSettings={{ theme, font, hero_image: heroImage }} 
+        />
+      )}
+
       {/* Navbar Minimalista */}
       <nav className="absolute top-0 w-full px-6 py-6 z-40 flex justify-between items-center max-w-6xl mx-auto left-0 right-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gold-primary flex items-center justify-center shadow-gold-glow-sm">
             <span className="font-serif font-bold text-on-primary text-lg">{tenant.name.charAt(0)}</span>
           </div>
-          <span className="font-sans font-bold tracking-widest uppercase text-xs text-foreground">{tenant.name}</span>
+          <span className={`font-sans font-bold tracking-widest uppercase text-xs ${theme === 'light-minimal' ? 'text-black' : 'text-white'}`}>{tenant.name}</span>
         </div>
         
         <div className="flex items-center gap-4">
           <AvatarSelector tenantId={tenant.id} currentAvatar={aiAvatar as string} isAdmin={isAdmin} />
           {isAdmin && (
-            <Link href={`http://${domain}.localhost:3000/admin`} className="btn-premium-gold px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg">
+            <Link href={`${process.env.NODE_ENV === 'development' ? 'http' : 'https'}://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000'}/admin`} className="btn-premium-gold px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg">
               Ir al Panel
             </Link>
           )}
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <header className="relative min-h-[90vh] flex flex-col justify-center items-center text-center px-6 pt-20">
-        {/* Abstract Background Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gold-primary/5 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
-        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-surface-bright/20 rounded-full blur-[90px] -z-10 pointer-events-none"></div>
+      {/* Hero Dinámico */}
+      <PremiumHero 
+        name={tenant.name} 
+        tagline={tagline} 
+        heroImage={heroImage}
+        theme={theme}
+        font={font}
+      />
 
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-1000 ease-out">
-          <p className="text-[11px] uppercase tracking-[0.4em] text-gold-primary font-bold font-sans">
-            Bienvenido a la Experiencia
-          </p>
-          <h1 className="font-serif text-6xl md:text-8xl text-foreground tracking-tight leading-[1.1] drop-shadow-sm">
-            {tenant.name}.
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl font-sans max-w-2xl mx-auto font-light leading-relaxed">
-            {tagline}
-          </p>
-          
-          <div className="pt-8">
-            <OpenChatButton />
-          </div>
-        </div>
+      {/* Manifesto Dinámico */}
+      <DynamicManifesto theme={theme} font={font} />
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 animate-bounce">
-          <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Descubrir</span>
-          <div className="w-[1px] h-12 bg-gradient-to-b from-gold-primary to-transparent"></div>
-        </div>
-      </header>
-
-      {/* Hairline Decorativo */}
-      <div className="w-full max-w-5xl mx-auto px-6 py-12">
-        <div className="flex items-center gap-4" aria-hidden>
-          <span className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-gold-primary/20 to-gold-primary/20" />
-          <div className="w-2 h-2 rotate-45 border border-gold-primary/50"></div>
-          <span className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-gold-primary/20 to-gold-primary/20" />
-        </div>
-      </div>
-
-      {/* Secciones de Características (Template) */}
-      <section className="py-20 px-6 max-w-6xl mx-auto">
+      {/* Secciones de Características */}
+      <section className={`py-20 px-6 max-w-6xl mx-auto ${theme === 'light-minimal' ? 'text-black' : 'text-white'}`}>
         <div className="text-center mb-16 space-y-4">
-          <h2 className="font-serif text-4xl md:text-5xl text-foreground">Nuestro Estándar</h2>
-          <p className="text-muted-foreground text-sm uppercase tracking-widest">Lo que nos hace diferentes</p>
+          <h2 className={`${font === 'serif' ? 'font-serif' : 'font-sans'} text-4xl md:text-5xl`}>Nuestro Estándar</h2>
+          <p className="text-muted-foreground text-sm uppercase tracking-widest opacity-70">Lo que nos hace diferentes</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature, i) => (
-            <div key={i} className="card-depth p-10 rounded-3xl group hover:-translate-y-2 transition-transform duration-500">
+            <div key={i} className={`card-depth p-10 rounded-3xl group hover:-translate-y-2 transition-transform duration-500 border ${theme === 'light-minimal' ? 'bg-white border-black/10 shadow-sm' : 'bg-[#1a1d24] border-white/5'}`}>
               <div className="w-12 h-12 rounded-full bg-surface-bright border border-border flex items-center justify-center mb-6 shadow-gold-glow-sm">
-                <span className="font-serif text-gold-primary text-xl">{i + 1}</span>
+                <span className={`${font === 'serif' ? 'font-serif' : 'font-sans'} text-gold-primary text-xl`}>{i + 1}</span>
               </div>
-              <h3 className="font-serif text-2xl text-foreground mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground font-sans leading-relaxed text-sm">
+              <h3 className={`${font === 'serif' ? 'font-serif' : 'font-sans'} text-2xl mb-3`}>{feature.title}</h3>
+              <p className="opacity-70 font-sans leading-relaxed text-sm">
                 {feature.desc}
               </p>
             </div>
@@ -127,21 +126,25 @@ export default async function TenantLandingPage(props: { params: Promise<{ domai
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-20 bg-surface/50">
-        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className={`border-t ${theme === 'light-minimal' ? 'border-black/10 bg-[#f0f0f0]' : 'border-white/10 bg-[#0a0b0d]'} mt-20`}>
+        <div className={`max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6 ${theme === 'light-minimal' ? 'text-black' : 'text-white'}`}>
           <div className="flex items-center gap-3">
-            <span className="font-serif font-bold text-foreground text-xl">{tenant.name}</span>
+            <span className={`${font === 'serif' ? 'font-serif' : 'font-sans'} font-bold text-xl`}>{tenant.name}</span>
           </div>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest">
+          <p className="text-xs uppercase tracking-widest opacity-50">
             © {new Date().getFullYear()} {tenant.name}. Reservas gestionadas por Inteligencia Artificial.
           </p>
         </div>
       </footer>
 
-      {/* Componente del Asistente IA (El verdadero motor de conversión) */}
-      <AiAssistantChat tenantId={tenant.id} tenantName={tenant.name} aiAvatar={aiAvatar as any} isAdmin={isAdmin} />
+      <AiAssistantChat 
+        tenantId={tenant.id} 
+        tenantName={tenant.name} 
+        aiAvatar={aiAvatar as any} 
+        tagline={tagline}
+        isAdmin={isAdmin} 
+      />
       
-      {/* Modal Real de Citas */}
       <BookingModal tenantId={tenant.id} />
     </div>
   );
