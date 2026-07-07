@@ -43,7 +43,10 @@ export function StyleSelector({
 
   const saveSettings = (key: string, value: string) => {
     startTransition(async () => {
-      await updateVisualSettings(tenantId, { [key]: value });
+      const result = await updateVisualSettings(tenantId, { [key]: value });
+      if (!result.success) {
+        alert('Error al guardar configuración: ' + JSON.stringify(result.error));
+      }
       router.refresh();
     });
   };

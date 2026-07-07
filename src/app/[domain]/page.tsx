@@ -87,7 +87,7 @@ export default async function TenantLandingPage(props: {
         <div className="flex items-center gap-4">
           <AvatarSelector tenantId={tenant.id} currentAvatar={aiAvatar as string} isAdmin={isAdmin} />
           {isAdmin && (
-            <Link href={`${process.env.NODE_ENV === 'development' ? 'http' : 'https'}://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000'}/admin`} className="btn-premium-gold px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg">
+            <Link href="/admin" className="btn-premium-gold px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg">
               Ir al Panel
             </Link>
           )}

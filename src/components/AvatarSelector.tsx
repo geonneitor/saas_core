@@ -19,7 +19,10 @@ export function AvatarSelector({ tenantId, currentAvatar, isAdmin = false }: { t
 
   const handleSelect = async (avatarId: string) => {
     setIsUpdating(true);
-    await updateAiSettings(tenantId, { ai_avatar: avatarId });
+    const result = await updateAiSettings(tenantId, { ai_avatar: avatarId });
+    if (!result.success) {
+      alert('Error al guardar avatar: ' + JSON.stringify(result.error));
+    }
     setIsUpdating(false);
     setIsOpen(false);
   };
