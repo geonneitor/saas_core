@@ -57,6 +57,13 @@ Mientras `zen` demostró el modelo de negocio y el estándar de diseño (Dark Lu
 
 ### Sprints Faltantes (Roadmap Inmediato)
 - **Sprint 4 (Fase UI Stripe & Go-to-Market):** Dashboard de Facturación (`/admin/billing`) finalizado con enfoque "SaaS MRR" (Hook + Upsell IA a $29/mes). Errores estrictos de TS en Next.js 16 resueltos (`page.tsx`, `middleware.ts`). Build validado al 100%. Código listo para deploy a producción. Evaluación de modelo prepago archivada estratégicamente para priorizar speed-to-market. (COMPLETADO ✅).
+- **Sprint 4.5 (Pivote a Prepago & Estabilización UI - 2026-07-07):** 
+  - **Estrategia Comercial:** Implementación oficial del modelo "Prepago Amigo" integrando un `WalletDashboard` (Billetera de Tokens) y un panel administrativo modernizado bajo estética "Dark Luxury".
+  - **UX/UI:** Desarrollo de un `InteractiveCalendar` con animaciones fluidas (Framer Motion) para gestión de citas.
+  - **Bugfixes Críticos:**
+    - Se resolvió un error fatal de hidratación (Hydration Mismatch) causado por la depreciación de `middleware.ts` en Next.js 16.2.10 (renombrado a `proxy.ts`).
+    - Se parcheó el renderizado de imágenes rotas (404) inyectando fallbacks dinámicos hacia Unsplash en la Landing de inquilinos.
+    - Se corrigieron los Server Actions (`updateVisualSettings`, `updateAiSettings`) permitiendo que el rol `super_admin` evada restricciones de propietario (Zero Trust Bypass) para facilitar configuración global.
 - **Sprint 6 (Automatización):** Integración con API de WhatsApp para que la IA responda por canales directos.
 
 ---
