@@ -7,11 +7,10 @@ import StripeCheckoutButton from './StripeCheckoutButton';
 
 type PlanKey = 'starter' | 'premium' | 'elite';
 
-// Catálogo espejado del paywall. UI-only — fuente de verdad final vivirá en Stripe.
 const PLAN_CATALOG: Record<PlanKey, { name: string; price: number; tokens: number; tagline: string }> = {
-  starter: { name: 'Starter', price: 29, tokens: 500, tagline: 'Para emprendedores que inician.' },
-  premium: { name: 'Premium', price: 79, tokens: 2000, tagline: 'La elección de los negocios que escalan.' },
-  elite: { name: 'Elite', price: 199, tokens: 10000, tagline: 'Para cadenas y marcas premium.' },
+  starter: { name: 'Agenda Base', price: 0, tokens: 0, tagline: 'Sistema de reservas manual. Incluido en tu implementación inicial.' },
+  premium: { name: 'IA Concierge', price: 29, tokens: 1000, tagline: 'Asistente IA 24/7, agendamiento automático y gestión inteligente.' },
+  elite: { name: 'Scale', price: 59, tokens: 5000, tagline: 'Para negocios con alto volumen de citas y clientes recurrentes.' },
 };
 
 const formatDate = (iso: string | null | undefined) => {
@@ -192,14 +191,24 @@ export default async function BillingPage(props: {
                       </div>
 
                       <div className="space-y-2 mb-6 text-xs text-foreground/80">
-                        <p className="flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-gold-primary" />
-                          {p.tokens.toLocaleString('es-MX')} tokens IA
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <span className="w-1 h-1 rounded-full bg-gold-primary" />
-                          Soporte prioritario
-                        </p>
+                        {key === 'starter' && (
+                          <>
+                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Sistema de Reservas</p>
+                            <p className="flex items-center gap-2 opacity-50"><span className="w-1 h-1 rounded-full bg-muted-foreground" /> Sin Automatización IA</p>
+                          </>
+                        )}
+                        {key === 'premium' && (
+                          <>
+                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Asistente IA Inteligente 24/7</p>
+                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Dominio Exclusivo y Calendario</p>
+                          </>
+                        )}
+                        {key === 'elite' && (
+                          <>
+                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Todo lo de IA Concierge</p>
+                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Alto volumen de clientes</p>
+                          </>
+                        )}
                       </div>
 
                       <div className="mt-auto">

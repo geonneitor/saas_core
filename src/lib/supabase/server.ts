@@ -14,8 +14,9 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
+            const domain = process.env.NODE_ENV === 'development' ? 'localhost' : '.geo-dev.online';
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...options, domain })
             )
           } catch {
             // The `setAll` method was called from a Server Component.

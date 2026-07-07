@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function updateSession(request: NextRequest, response: NextResponse) {
+export async function updateSession(request: NextRequest, response: NextResponse, isAdminApp: boolean = false) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -11,9 +11,10 @@ export async function updateSession(request: NextRequest, response: NextResponse
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
+          const domain = process.env.NODE_ENV === 'development' ? 'localhost' : '.geo-dev.online';
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, { ...options, domain })
           )
         },
       },
@@ -25,11 +26,9 @@ export async function updateSession(request: NextRequest, response: NextResponse
   const { data: { user } } = await supabase.auth.getUser()
 
   // Proteger rutas de administración (SaaS Core)
-  // Si la ruta original o reescrita empieza con /admin, requerimos sesión
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin') || response.headers.get('x-middleware-rewrite')?.includes('/admin')
   
-  if (!user && !isAuthRoute && (request.nextUrl.pathname.startsWith('/admin') || request.nextUrl.pathname === '/')) {
+  if (isAdminApp && !user && !isAuthRoute && (request.nextUrl.pathname.startsWith('/admin') || request.nextUrl.pathname === '/')) {
     // Nota: en proxy.ts mapeamos / a /admin para el panel principal.
     // Si no hay user, forzamos login.
     const loginUrl = request.nextUrl.clone()
@@ -37,8 +36,8 @@ export async function updateSession(request: NextRequest, response: NextResponse
     return NextResponse.redirect(loginUrl)
   }
 
-  // Si ya está logueado y trata de ir a login, mandarlo al admin
-  if (user && isAuthRoute) {
+  // Si ya está logueado y trata de ir a login EN LA APP DE ADMIN, mandarlo al admin
+  if (isAdminApp && user && isAuthRoute) {
     const adminUrl = request.nextUrl.clone()
     adminUrl.pathname = '/admin'
     return NextResponse.redirect(adminUrl)

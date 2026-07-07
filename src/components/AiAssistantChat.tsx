@@ -12,16 +12,20 @@ export default function AiAssistantChat({
   tenantId, 
   tenantName,
   aiAvatar = 'lotito',
+  tagline = 'Darte el mejor servicio.',
   isAdmin = false
 }: { 
   tenantId: string; 
   tenantName: string;
   aiAvatar?: AvatarVariant;
+  tagline?: string;
   isAdmin?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const initialText = `¡Hola! Soy el asistente IA de ${tenantName}. ✨\n\nNuestra promesa: ${tagline}\n\nPuedo ayudarte a:\n📅 Agendar citas en segundos\n⏰ Consultar nuestros horarios\n❓ Resolver cualquier duda sobre los servicios\n\n¿Qué te gustaría hacer hoy?`;
+  
   const [messages, setMessages] = useState<{role: string, text: string}[]>([
-    { role: 'assistant', text: `¡Hola! Soy el asistente IA de ${tenantName}. ¿En qué te puedo ayudar hoy? ✨` }
+    { role: 'assistant', text: initialText }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

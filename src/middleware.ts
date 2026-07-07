@@ -63,5 +63,5 @@ export default async function middleware(req: NextRequest) {
 
   // 3. ACTUALIZAR SESIÓN DE SUPABASE
   // Esto refresca el token de auth si expiró, pasándole el request y el response de reescritura.
-  return await updateSession(req, response);
+  return await updateSession(req, response, isAdminApp);
 }

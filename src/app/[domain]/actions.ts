@@ -102,3 +102,38 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
     return { success: false, error: error.message };
   }
 }
+
+export async function updateVisualSettings(tenantId: string, data: { theme?: string, font?: string, hero_image?: string }) {
+  const supabase = await createClient();
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'No autenticado' };
+  }
+
+  const { data: tenantData } = await supabase
+    .from('tenants')
+    .select('owner_id')
+    .eq('id', tenantId)
+    .single();
+
+  if (!tenantData || tenantData.owner_id !== user.id) {
+    // If not owner, check if super_admin
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (profile?.role !== 'super_admin') {
+      return { success: false, error: 'Sin permisos de administrador para este tenant' };
+    }
+  }
+  
+  try {
+    const { error } = await supabase.from('business_settings').update(data).eq('tenant_id', tenantId);
+    if (error) throw error;
+    
+    revalidatePath('/[domain]', 'page');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error actualizando estilos:', error);
+    return { success: false, error: error.message };
+  }
+}
+
