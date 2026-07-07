@@ -45,19 +45,8 @@ export default async function middleware(req: NextRequest) {
 
   // 1. REESCRITURA PARA EL PANEL DE ADMINISTRACIÓN (SaaS Core en app.geo-dev.online)
   if (isAdminApp) {
-    let finalPath: string;
-    
-    if (path === '/') {
-      // Landing page interna o dashboard en la raíz del Admin
-      finalPath = '/home';
-    } else if (path.startsWith('/admin')) {
-      // Panel de administración general del SaaS
-      finalPath = path;
-    } else {
-      // Evitar duplicar /home si el path ya lo trae
-      finalPath = path.startsWith('/home') ? path : `/home${path}`;
-    }
-
+    // Si entran a la raíz del admin, los mandamos al dashboard
+    const finalPath = path === '/' ? '/admin' : path;
     console.log(`[PROXY] Rewriting ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } else {
