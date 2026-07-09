@@ -118,8 +118,8 @@ export default function AiAssistantChat({
                 <AvatarSystem variant={aiAvatar} isActive={true} />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-foreground text-lg leading-none capitalize">{aiAvatar} AI</h3>
-                <span className="text-[10px] text-gold-primary font-bold tracking-wide uppercase mt-1 block">Conectado a Groq</span>
+                <h3 className="font-serif font-bold text-foreground text-lg leading-none">{tenantName} Asistente</h3>
+                <span className="text-[10px] text-gold-primary font-bold tracking-wide uppercase mt-1 block flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> En línea 24/7</span>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-surface-container transition-colors">
@@ -130,7 +130,7 @@ export default function AiAssistantChat({
           <div className="flex-1 p-5 overflow-y-auto bg-surface flex flex-col gap-4">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-3xl text-[15px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'btn-premium-gold rounded-tr-sm' : 'bg-surface-container border border-border text-foreground rounded-tl-sm'}`}>
+                <div className={`max-w-[85%] p-4 rounded-3xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'btn-premium-gold rounded-tr-sm' : 'bg-surface-container border border-border text-foreground rounded-tl-sm'}`}>
                   {msg.text}
                 </div>
               </div>

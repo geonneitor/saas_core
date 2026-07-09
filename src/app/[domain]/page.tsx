@@ -10,6 +10,34 @@ import { PremiumHero } from '@/components/tenant-ui/PremiumHero';
 import { DynamicManifesto } from '@/components/tenant-ui/DynamicManifesto';
 import { StyleSelector } from '@/components/tenant-ui/StyleSelector';
 
+import type { Metadata } from 'next';
+
+export async function generateMetadata(
+  props: { params: Promise<{ domain: string }> }
+): Promise<Metadata> {
+  const params = await props.params;
+  const domain = params.domain;
+  const supabase = await createClient();
+
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('name, business_settings(brand_tagline)')
+    .eq('subdomain', domain)
+    .single();
+
+  if (!tenant) {
+    return { title: 'Página no encontrada' };
+  }
+
+  const settings = Array.isArray(tenant.business_settings) ? tenant.business_settings[0] : tenant.business_settings;
+  const tagline = settings?.brand_tagline || 'Experiencia y exclusividad.';
+
+  return {
+    title: `${tenant.name} | Portal de Reservas`,
+    description: tagline,
+  };
+}
+
 export default async function TenantLandingPage(props: { 
   params: Promise<{ domain: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -61,9 +89,9 @@ export default async function TenantLandingPage(props: {
   
   // Extract features to show in the landing
   const features = [
-    { title: "Servicio Premium", desc: "Atención personalizada enfocada en tus necesidades." },
-    { title: "Tecnología de Punta", desc: "Reservas impulsadas por inteligencia artificial." },
-    { title: "Exclusividad", desc: "Un ambiente diseñado para tu máximo confort." }
+    { title: "Exclusividad Absoluta", desc: "Atención hiper-personalizada. Tu tiempo y preferencias son nuestra máxima prioridad." },
+    { title: "Reserva Inteligente", desc: "Nuestro Concierge IA gestiona tu espacio en segundos, 24/7, sin fricciones." },
+    { title: "Experiencia Elevada", desc: "Un estándar de servicio diseñado para superar expectativas en cada detalle." }
   ];
 
   return (

@@ -21,8 +21,13 @@ interface TenantLite {
   subdomain: string;
 }
 
-export function AppSidebar({ tenant }: { tenant: TenantLite }) {
+export function AppSidebar({ tenant, settings }: { tenant: TenantLite, settings?: any }) {
   const pathname = usePathname();
+  
+  const tokensLimit = settings?.ai_tokens_limit || 5000;
+  const tokensUsed = settings?.ai_tokens_used || 0;
+  const tokensRemaining = Math.max(0, tokensLimit - tokensUsed);
+  const tokenPercentage = tokensLimit > 0 ? Math.min(100, Math.max(0, (tokensRemaining / tokensLimit) * 100)) : 0;
 
   const items = [
     {
@@ -102,12 +107,12 @@ export function AppSidebar({ tenant }: { tenant: TenantLite }) {
           </div>
           
           <div>
-            <div className="text-2xl font-serif text-foreground tracking-tight leading-none">4,850</div>
+            <div className="text-2xl font-serif text-foreground tracking-tight leading-none">{tokensRemaining.toLocaleString()}</div>
             <div className="text-[10px] text-muted-foreground mt-1">Tokens restantes</div>
           </div>
           
           <div className="w-full bg-white/[0.05] rounded-full h-1 mt-1 overflow-hidden">
-            <div className="bg-gold-primary h-full w-[48%] shadow-gold-glow-sm rounded-full" />
+            <div className="bg-gold-primary h-full shadow-gold-glow-sm rounded-full transition-all duration-500" style={{ width: `${tokenPercentage}%` }} />
           </div>
 
           <Link href="/admin/settings?tab=wallet" className="w-full mt-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-center text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">

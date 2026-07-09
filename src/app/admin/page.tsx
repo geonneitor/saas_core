@@ -64,7 +64,7 @@ export default async function AdminPage() {
     const adminSupabase = createAdminClient();
     const { error } = await adminSupabase.from('tenants').delete().eq('id', id);
     if (error) console.error("Error deleting tenant:", error);
-    revalidatePath('/home/admin');
+    revalidatePath('/admin');
     revalidatePath('/', 'layout');
   }
 

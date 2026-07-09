@@ -7,6 +7,8 @@ export default async function AdminDashboard(props: { params: Promise<{ domain: 
   const params = await props.params;
   const domain = params.domain;
   const supabase = await createClient();
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
 
   // Validar Inquilino y traer configuraciones
   const { data: tenant } = await supabase
@@ -51,7 +53,7 @@ export default async function AdminDashboard(props: { params: Promise<{ domain: 
     <div className="min-h-screen bg-background pb-24 font-sans selection:bg-primary selection:text-on-primary">
       <header className="px-6 pt-10 pb-6 max-w-5xl mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border mb-8">
         <div>
-          <Link href={`http://${domain}.localhost:3000`} className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2 mb-4 hover:text-foreground transition-colors w-fit">
+          <Link href={`${protocol}://${domain}.${rootDomain}`} className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2 mb-4 hover:text-foreground transition-colors w-fit">
             <ArrowRight className="w-3 h-3 rotate-180" />
             Volver a la Web Pública
           </Link>
@@ -99,7 +101,7 @@ export default async function AdminDashboard(props: { params: Promise<{ domain: 
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Asistente IA</p>
               <h3 className="text-2xl font-serif text-foreground mt-1 flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span> 
-                {aiAvatar}
+                Activo
               </h3>
             </div>
           </div>

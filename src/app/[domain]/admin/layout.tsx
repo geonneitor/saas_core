@@ -11,19 +11,17 @@ export default async function AdminLayout(props: {
   const supabase = await createClient();
 
   // 1. Protección de ruta (Solo usuarios autenticados)
-  // TEMPORAL: Comentado para poder ver la UI sin login en desarrollo
   const { data: { user }, error } = await supabase.auth.getUser();
-  // if (error || !user) {
-  //   redirect('/');
-  // }
-  
-  // Usuario simulado temporal para que la UI funcione
-  const mockUser = user || { email: 'admin@negocio.com' };
+  if (error || !user) {
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+    const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+    redirect(`${protocol}://${rootDomain}/login`);
+  }
 
   // 2. Validar que el tenant existe y obtener info
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('*')
+    .select('*, business_settings(*)')
     .eq('subdomain', domain)
     .single();
 
@@ -31,10 +29,14 @@ export default async function AdminLayout(props: {
     redirect('/');
   }
 
+  const settings = Array.isArray(tenant.business_settings) 
+    ? tenant.business_settings[0] 
+    : tenant.business_settings;
+
   return (
     <div className="dark min-h-screen bg-[#0A0A0C] text-foreground font-sans selection:bg-gold-primary/30 selection:text-gold-light flex">
       <SidebarProvider>
-        <AppSidebar tenant={tenant} />
+        <AppSidebar tenant={tenant} settings={settings} />
         <div className="w-full flex flex-col min-h-screen relative overflow-hidden">
           {/* Ambient glows */}
           <div className="fixed top-[-10%] right-[-5%] w-[400px] h-[400px] bg-gold-primary/[0.04] rounded-full blur-[100px] pointer-events-none -z-0" />
@@ -53,7 +55,7 @@ export default async function AdminLayout(props: {
 
             {/* Menú de Usuario / Perfil en el Topbar */}
             <div className="flex items-center gap-4">
-              <span className="text-xs font-medium text-foreground/80 hidden sm:inline-block">{mockUser.email}</span>
+              <span className="text-xs font-medium text-foreground/80 hidden sm:inline-block">{user.email}</span>
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gold-primary to-gold-light text-[#121212] flex items-center justify-center font-bold text-sm shadow-gold-glow-sm">
                 {tenant.name.charAt(0).toUpperCase()}
               </div>
