@@ -56,16 +56,12 @@ export default function TokenUsageBar({ used, limit, planName }: TokenUsageBarPr
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-bold flex items-center gap-2">
             <Sparkles className="w-3 h-3 text-gold-primary" strokeWidth={2.5} />
-            Consumo de Tokens IA
+            Saldo de IA (Tokens)
           </p>
           <h3 className="font-serif text-2xl md:text-3xl text-foreground tracking-tight mt-2">
             {used.toLocaleString('es-MX')} <span className="text-muted-foreground/60 text-lg">/ {safeLimit.toLocaleString('es-MX')}</span>
           </h3>
-          {planName && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Plan actual · <span className="text-foreground/80 font-semibold uppercase tracking-wider">{planName}</span>
-            </p>
-          )}
+
         </div>
 
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border bg-white/[0.02] ${stateMeta.text} border-current/30`}>
@@ -111,14 +107,14 @@ export default function TokenUsageBar({ used, limit, planName }: TokenUsageBarPr
         </div>
 
         {(isWarning || isCritical) && (
-          <motion.a
-            href="/home"
+          <motion.button
+            onClick={() => alert('Ir a sección de recargas')}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-primary hover:text-gold-light transition-colors"
           >
-            Ampliar mi plan →
-          </motion.a>
+            Recarga para no perder citas →
+          </motion.button>
         )}
       </div>
     </div>

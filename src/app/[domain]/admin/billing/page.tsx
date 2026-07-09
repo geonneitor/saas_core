@@ -5,12 +5,12 @@ import { CreditCard, Sparkles, Calendar, Receipt, ArrowUpRight, Crown, AlertCirc
 import TokenUsageBar from './TokenUsageBar';
 import StripeCheckoutButton from './StripeCheckoutButton';
 
-type PlanKey = 'starter' | 'premium' | 'elite';
+type PlanKey = 'basica' | 'pro' | 'max';
 
-const PLAN_CATALOG: Record<PlanKey, { name: string; price: number; tokens: number; tagline: string }> = {
-  starter: { name: 'Agenda Base', price: 0, tokens: 0, tagline: 'Sistema de reservas manual. Incluido en tu implementación inicial.' },
-  premium: { name: 'IA Concierge', price: 29, tokens: 1000, tagline: 'Asistente IA 24/7, agendamiento automático y gestión inteligente.' },
-  elite: { name: 'Scale', price: 59, tokens: 5000, tagline: 'Para negocios con alto volumen de citas y clientes recurrentes.' },
+const RECARGAS_CATALOG: Record<PlanKey, { name: string; price: number; tokens: number; tagline: string }> = {
+  basica: { name: 'Recarga Básica', price: 150, tokens: 1000, tagline: 'Ideal para semanas tranquilas. ~200 citas gestionadas.' },
+  pro: { name: 'Recarga Pro', price: 400, tokens: 3000, tagline: 'El equilibrio perfecto. Nunca te quedes sin saldo en meses.' },
+  max: { name: 'Recarga Max', price: 900, tokens: 10000, tagline: 'Para negocios con alto volumen. Despreocúpate por completo.' },
 };
 
 const formatDate = (iso: string | null | undefined) => {
@@ -45,9 +45,7 @@ export default async function BillingPage(props: {
   const tokensUsed = settings?.ai_tokens_used ?? 0;
   const tokensLimit = settings?.ai_tokens_limit ?? 500;
 
-  // 3. Derivar info del plan actual
-  const currentPlanKey = (tenant.subscription_plan as PlanKey) || 'starter';
-  const currentPlan = PLAN_CATALOG[currentPlanKey] || PLAN_CATALOG.starter;
+  // 3. Derivar estado
   const isActive = tenant.subscription_status === 'active';
   const showSuccess = Boolean(searchParams.session_id);
 
@@ -73,10 +71,10 @@ export default async function BillingPage(props: {
             Facturación · {tenant.name}
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-foreground tracking-tight leading-tight">
-            Tu suscripción, <span className="italic text-gold-primary">bajo control.</span>
+            Tu Billetera de <span className="italic text-gold-primary">Inteligencia Artificial.</span>
           </h1>
           <p className="text-muted-foreground max-w-2xl">
-            Monitorea tu consumo de IA, gestiona tu plan y revisa el historial de pagos.
+            Control total de tu inversión. Recarga solo lo que consumes, sin rentas mensuales forzosas ni sorpresas bancarias.
           </p>
 
           {showSuccess && (
@@ -92,6 +90,29 @@ export default async function BillingPage(props: {
             </div>
           )}
         </header>
+
+        {/* --- Promo Banner --- */}
+        <div className="relative overflow-hidden card-depth border border-gold-primary/30 rounded-3xl p-6 md:p-8 bg-gradient-to-r from-gold-primary/10 via-surface to-surface flex flex-col md:flex-row items-center justify-between gap-6 shadow-gold-glow-sm">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold-light via-gold-primary to-gold-dark animate-shimmer" />
+          <div className="flex-1 space-y-2 relative z-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
+              <AlertCircle className="w-3 h-3" />
+              Demo Gratuita de 7 Días Activa
+            </div>
+            <h2 className="font-serif text-2xl md:text-3xl text-foreground">
+              Asegura tu asistente digital hoy.
+            </h2>
+            <p className="text-muted-foreground text-sm max-w-xl leading-relaxed">
+              Paga tu instalación única de <span className="text-foreground font-bold line-through opacity-50">$3,500</span> <span className="text-gold-primary font-bold">$1,900 MXN</span> hoy y recibe un <span className="text-foreground font-bold underline decoration-gold-primary decoration-2">50% de descuento</span> en tu primera recarga de tokens. Sin cobros automáticos, sin sorpresas.
+            </p>
+          </div>
+          <button 
+            type="button" 
+            className="shrink-0 relative z-10 btn-premium-gold px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(229,193,88,0.4)] hover:scale-105 transition-transform"
+          >
+            Generar Ficha de Pago
+          </button>
+        </div>
 
         {/* --- Grid principal --- */}
         <div className="grid lg:grid-cols-3 gap-6">
@@ -110,10 +131,10 @@ export default async function BillingPage(props: {
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-bold">
-                        Período Actual
+                        Modelo Amigo
                       </p>
                       <p className="font-serif text-lg text-foreground mt-0.5">
-                        {renewDate ? `Renueva el ${formatDate(tenant.current_period_end)}` : 'Sin renovación programada'}
+                        Tu saldo nunca expira
                       </p>
                     </div>
                   </div>
@@ -126,7 +147,7 @@ export default async function BillingPage(props: {
                   )}
                 </div>
 
-                <TokenUsageBar used={tokensUsed} limit={tokensLimit} planName={currentPlan.name} />
+                <TokenUsageBar used={tokensUsed} limit={tokensLimit} />
               </div>
             </div>
 
@@ -134,9 +155,9 @@ export default async function BillingPage(props: {
             <div className="card-depth rounded-3xl p-8 md:p-10">
               <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-gold-primary font-bold">Planes</p>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-gold-primary font-bold">Recargar Saldo</p>
                   <h2 className="font-serif text-2xl md:text-3xl text-foreground tracking-tight mt-1.5">
-                    Escala cuando tu negocio lo pida.
+                    Recarga tu billetera vía SPEI.
                   </h2>
                 </div>
                 <Link
@@ -149,30 +170,17 @@ export default async function BillingPage(props: {
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
-                {(Object.keys(PLAN_CATALOG) as PlanKey[]).map((key) => {
-                  const p = PLAN_CATALOG[key];
-                  const isCurrent = key === currentPlanKey && isActive;
+                {(Object.keys(RECARGAS_CATALOG) as PlanKey[]).map((key) => {
+                  const p = RECARGAS_CATALOG[key];
                   return (
                     <div
                       key={key}
-                      className={`relative rounded-2xl p-6 flex flex-col transition-all
-                        ${
-                          isCurrent
-                            ? 'bg-gradient-to-b from-gold-primary/10 via-surface to-surface border border-gold-primary/40 shadow-gold-glow-sm'
-                            : 'bg-white/[0.02] border border-white/[0.06] hover:border-white/15'
-                        }
-                      `}
+                      className="relative rounded-2xl p-6 flex flex-col transition-all bg-white/[0.02] border border-white/[0.06] hover:border-gold-primary/40 hover:shadow-gold-glow-sm"
                     >
-                      {isCurrent && (
-                        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-gold-light to-gold-primary text-[#121212] text-[9px] font-black uppercase tracking-[0.2em]">
-                          Tu plan
-                        </div>
-                      )}
-
                       <div className="flex items-center gap-2 mb-2">
-                        {key === 'elite' ? (
+                        {key === 'max' ? (
                           <Crown className="w-4 h-4 text-gold-primary" strokeWidth={2} />
-                        ) : key === 'premium' ? (
+                        ) : key === 'pro' ? (
                           <Sparkles className="w-4 h-4 text-gold-primary" strokeWidth={2} />
                         ) : (
                           <CreditCard className="w-4 h-4 text-muted-foreground" strokeWidth={2} />
@@ -187,43 +195,25 @@ export default async function BillingPage(props: {
                         <span className="font-serif text-4xl text-foreground leading-none tracking-tight">
                           {p.price}
                         </span>
-                        <span className="text-xs text-muted-foreground mb-1.5 font-medium">/mes</span>
+                        <span className="text-xs text-muted-foreground mb-1.5 font-medium">MXN</span>
                       </div>
 
                       <div className="space-y-2 mb-6 text-xs text-foreground/80">
-                        {key === 'starter' && (
-                          <>
-                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Sistema de Reservas</p>
-                            <p className="flex items-center gap-2 opacity-50"><span className="w-1 h-1 rounded-full bg-muted-foreground" /> Sin Automatización IA</p>
-                          </>
-                        )}
-                        {key === 'premium' && (
-                          <>
-                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Asistente IA Inteligente 24/7</p>
-                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Dominio Exclusivo y Calendario</p>
-                          </>
-                        )}
-                        {key === 'elite' && (
-                          <>
-                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Todo lo de IA Concierge</p>
-                            <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> Alto volumen de clientes</p>
-                          </>
+                        <p className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gold-primary" /> {p.tokens.toLocaleString('es-MX')} Tokens IA</p>
+                        {key === 'max' && (
+                          <p className="flex items-center gap-2 text-gold-primary font-bold">
+                            <span className="w-1 h-1 rounded-full bg-gold-primary" /> Mejor valor por token
+                          </p>
                         )}
                       </div>
 
                       <div className="mt-auto">
-                        {isCurrent ? (
-                          <div className="w-full py-3 text-center rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                            Plan activo
-                          </div>
-                        ) : (
-                          <StripeCheckoutButton
-                            plan={key}
-                            cycle="monthly"
-                            label={`Cambiar a ${p.name}`}
-                            variant="secondary"
-                          />
-                        )}
+                        <button
+                          type="button"
+                          className="w-full py-3 text-center rounded-full bg-surface-bright border border-border text-[10px] font-bold uppercase tracking-[0.2em] text-foreground hover:bg-gold-primary hover:text-[#121212] hover:border-gold-primary transition-all"
+                        >
+                          Generar CLABE
+                        </button>
                       </div>
                     </div>
                   );
@@ -241,39 +231,31 @@ export default async function BillingPage(props: {
 
               <dl className="mt-6 space-y-4 text-sm">
                 <div className="flex items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
-                  <dt className="text-muted-foreground">Plan</dt>
-                  <dd className="text-foreground font-semibold text-right">{currentPlan.name}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
-                  <dt className="text-muted-foreground">Costo mensual</dt>
-                  <dd className="text-foreground font-semibold text-right">${currentPlan.price}.00 USD</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
                   <dt className="text-muted-foreground">Estado</dt>
+                  <dd className="text-foreground font-semibold text-right">Demo Activa</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
+                  <dt className="text-muted-foreground">Rentas Fijas</dt>
+                  <dd className="text-emerald-400 font-semibold text-right">$0.00 MXN (Prepago)</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
+                  <dt className="text-muted-foreground">Sistema</dt>
                   <dd>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] border
-                        ${
-                          isActive
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                        }
-                      `}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                      {isActive ? 'Activa' : 'Inactiva'}
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      En Línea
                     </span>
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 pb-4 border-b border-white/[0.06]">
-                  <dt className="text-muted-foreground">Cliente</dt>
+                  <dt className="text-muted-foreground">ID Negocio</dt>
                   <dd className="text-foreground/80 text-right font-mono text-xs">
-                    {tenant.stripe_customer_id ? tenant.stripe_customer_id.slice(0, 14) + '…' : 'No asignado'}
+                    {tenant.id.slice(0, 8)}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-muted-foreground">Próxima renovación</dt>
-                  <dd className="text-foreground/80 text-right">{formatDate(tenant.current_period_end)}</dd>
+                  <dt className="text-muted-foreground">Próxima renta</dt>
+                  <dd className="text-foreground/80 text-right">Nunca</dd>
                 </div>
               </dl>
 
@@ -281,12 +263,11 @@ export default async function BillingPage(props: {
                 <button
                   type="button"
                   className="w-full py-3 rounded-full bg-white/5 border border-white/10 text-foreground text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white/10 hover:border-white/20 transition-all"
-                  title="Próximamente: gestionar método de pago vía Stripe Customer Portal"
                 >
-                  Gestionar método de pago
+                  Ver Datos de Transferencia (CLABE)
                 </button>
                 <p className="text-[10px] text-muted-foreground/70 text-center mt-3">
-                  Conectado al Stripe Customer Portal (próximamente)
+                  Recargas validadas automáticamente vía SPEI
                 </p>
               </div>
             </div>
@@ -305,8 +286,8 @@ export default async function BillingPage(props: {
                 <div className="space-y-3">
                   {/* Placeholder visual de facturas — la fuente real llegará del webhook */}
                   {[
-                    { date: formatDate(tenant.current_period_end), amount: currentPlan.price, status: 'paid' },
-                    { date: formatDate(tenant.created_at), amount: currentPlan.price, status: 'paid' },
+                    { date: formatDate(tenant.current_period_end), amount: 150, status: 'paid' },
+                    { date: formatDate(tenant.created_at), amount: 1900, status: 'paid' },
                   ].map((inv, i) => (
                     <div
                       key={i}
@@ -318,11 +299,11 @@ export default async function BillingPage(props: {
                         </div>
                         <div>
                           <p className="text-xs text-foreground/90 font-medium">{inv.date}</p>
-                          <p className="text-[10px] text-muted-foreground">Suscripción · {currentPlan.name}</p>
+                          <p className="text-[10px] text-muted-foreground">Recarga de Saldo Amigo</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-foreground">${inv.amount}.00</p>
+                        <p className="text-sm font-bold text-foreground">$150.00 MXN</p>
                         <p className="text-[9px] uppercase tracking-wider text-emerald-400 font-bold">Pagada</p>
                       </div>
                     </div>
@@ -345,21 +326,7 @@ export default async function BillingPage(props: {
         </div>
 
         {/* --- CTA de upgrade final --- */}
-        {!isActive && (
-          <div className="relative overflow-hidden card-depth rounded-3xl p-10 md:p-14 text-center space-y-6">
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gold-primary/10 rounded-full blur-3xl pointer-events-none" />
-            <Crown className="w-12 h-12 text-gold-primary mx-auto" strokeWidth={1.5} />
-            <h2 className="font-serif text-3xl md:text-4xl text-foreground tracking-tight max-w-2xl mx-auto leading-tight">
-              Activa tu plan y desbloquea todo el potencial de tu asistente IA.
-            </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Configuración en menos de 2 minutos. Cancela cuando quieras.
-            </p>
-            <div className="pt-2 max-w-sm mx-auto">
-              <StripeCheckoutButton plan="premium" cycle="monthly" label="Activar Premium ahora" />
-            </div>
-          </div>
-        )}
+        {/* --- CTA de upgrade final OMITIDO EN PREPAGO --- */}
       </div>
     </div>
   );

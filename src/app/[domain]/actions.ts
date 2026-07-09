@@ -50,7 +50,7 @@ export async function bookAppointment(tenantId: string, data: { clientName: stri
     if (aptError) throw aptError;
 
     // Refrescar el calendario del inquilino
-    revalidatePath('/[domain]', 'page');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     console.error('Error al agendar cita:', error);
@@ -98,8 +98,7 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
 
     if (error) throw error;
     
-    revalidatePath('/[domain]', 'page');
-    revalidatePath('/[domain]/admin', 'page');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     console.error('[updateAiSettings] Error actualizando settings de IA:', error);
@@ -133,7 +132,7 @@ export async function updateVisualSettings(tenantId: string, data: { theme?: str
     const { error } = await supabase.from('business_settings').update(data).eq('tenant_id', tenantId);
     if (error) throw error;
     
-    revalidatePath('/[domain]', 'page');
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: any) {
     console.error('Error actualizando estilos:', error);

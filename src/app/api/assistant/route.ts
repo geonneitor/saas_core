@@ -1,3 +1,6 @@
+export const runtime = 'edge';
+export const maxDuration = 30;
+
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -161,21 +164,24 @@ IMPORTANTE:
       } else {
         basePrompt = `
 Eres el Concierge Virtual de alto nivel para el negocio "${settings?.business_name || 'tu negocio'}".
-La fecha actual es: ${currentDate}.
+La fecha y hora actual es: ${currentDate}.
 Configuración del negocio: ${settings?.ai_prompt || 'Sé profesional y resolutivo.'}
-Tu objetivo es asistir a los clientes para agendar, revisar y cancelar citas.
-No inventes precios ni servicios. Si te preguntan algo fuera de agendar espacios, pide disculpas cordialmente.
+Tu único objetivo es asistir a los clientes para agendar y gestionar citas.
 
 TONO ("Dark Luxury"):
-- Sé extremadamente educado, elegante, y conciso.
-- Evita el exceso de entusiasmo (nada de "¡Hola! ¡Claro que sí!").
-- Usa frases como: "Será un placer asistirle.", "Con gusto agendaré su espacio."
+- Sé educado, elegante y muy conciso. Respuestas cortas.
+- Evita el exceso de entusiasmo.
 
-REGLA CRÍTICA PARA AGENDAR (Tool: book_appointment):
-NUNCA ejecutes la tool 'book_appointment' sin tener el NOMBRE del cliente y una HORA acordada válida.
-Si el cliente solo dice "Quiero una cita mañana", primero revisa la disponibilidad (check_availability) y ofrécele horarios dentro de la franja. Luego pídele su nombre para confirmar.
+FLUJO ESTRICTO PARA AGENDAR (Sigue estos pasos en orden):
+1. SALUDO Y NOMBRE: Si el cliente quiere agendar, PRIMERO pregúntale su nombre completo.
+2. FECHA Y HORA: Una vez que tengas el nombre, pregúntale cuándo desea la cita.
+3. DISPONIBILIDAD: Usa SIEMPRE la herramienta 'check_availability' antes de ofrecer horarios. NO INVENTES HORARIOS. Revisa las horas de apertura ('opening_time') y citas ocupadas devueltas por la herramienta.
+4. CONFIRMACIÓN: Cuando el cliente elija un horario disponible, usa la herramienta 'book_appointment'. NUNCA uses 'book_appointment' sin confirmar antes el nombre y la hora exacta con disponibilidad verificada.
 
-IMPORTANTE: Después de ejecutar una tool, responde confirmando al cliente la acción realizada.
+PROHIBICIONES:
+- NUNCA inventes IDs, nombres, ni horas disponibles.
+- No ofrezcas precios ni servicios adicionales. Si te preguntan algo fuera de agendar espacios, pide disculpas cordialmente.
+- Siempre confirma en texto la acción que acabas de realizar al usar una herramienta.
         `;
       }
 

@@ -53,6 +53,17 @@ export function PremiumHero({
           {tagline}
         </p>
         
+        {/* CTA Button */}
+        <motion.button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`px-8 py-4 mb-16 rounded-full font-bold tracking-widest uppercase text-sm md:text-base flex items-center gap-3 transition-all shadow-lg hover:shadow-xl ${isNeon ? 'bg-[#00ff9d] text-black shadow-[0_0_20px_rgba(0,255,157,0.4)]' : 'btn-premium-gold text-[#121212] shadow-gold-glow'}`}
+        >
+          <span>Agendar Cita</span>
+          <div className="w-2 h-2 rounded-full bg-black/60 animate-pulse"></div>
+        </motion.button>
+
         {/* Scroll Indicator */}
         <motion.div
           animate={{ y: [0, 15, 0] }}
