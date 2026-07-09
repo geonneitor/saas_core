@@ -45,8 +45,8 @@ export default async function middleware(req: NextRequest) {
 
   // 1. REESCRITURA PARA EL PANEL DE ADMINISTRACIÓN (SaaS Core en app.geo-dev.online)
   if (isAdminApp) {
-    // Si entran a la raíz del admin, los mandamos al dashboard
-    const finalPath = path === '/' ? '/admin' : path;
+    // Si entran a la raíz del admin, se les muestra la landing (page.tsx)
+    const finalPath = path;
     console.log(`[PROXY] Rewriting ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } else {
