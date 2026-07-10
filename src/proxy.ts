@@ -18,7 +18,7 @@ export const config = {
 export default async function middleware(req: NextRequest) {
   const url = req.nextUrl;
 
-  // Obtenemos el hostname actual (ej: "mibarberia.localhost:3000" o "mibarberia.tusaas.com")
+  // Obtenemos el hostname actual (ej: "mibarberia.localhost:3000" o "mibarberia.geo-dev.online")
   let hostname = req.headers.get('host') || '';
 
   // Limpiamos el puerto en local para extraer solo el dominio
@@ -27,30 +27,40 @@ export default async function middleware(req: NextRequest) {
   // Nuestro dominio base definido en .env (ej. localhost o geo-dev.online)
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/:\d+$/, '') || 'localhost';
 
-  // Determinamos si la petición debe ir al Panel de Administración (SaaS Core)
-  // Es Admin si:
-  // 1. Entran a app.tudominio.com (ej. app.geo-dev.online)
-  // 2. Entran al dominio de Vercel directamente (*.vercel.app)
-  // 3. Entran directamente a localhost (para entorno de desarrollo local)
-  const isAdminApp = 
-    hostname === `app.${rootDomain}` || 
-    hostname.endsWith('.vercel.app') ||
-    hostname === rootDomain || 
-    hostname === `www.${rootDomain}`;
-  
   // Ruta original que el usuario pidió (ej: "/", "/reservar", "/admin")
   const path = url.pathname;
 
   let response: NextResponse;
+  let isAdminApp = false;
+  let isSuperAdminApp = false;
 
-  // 1. REESCRITURA PARA EL PANEL DE ADMINISTRACIÓN (SaaS Core en app.geo-dev.online)
-  if (isAdminApp) {
-    // Si entran a la raíz del admin, se les muestra la landing (page.tsx)
-    const finalPath = path;
-    console.log(`[PROXY] Rewriting ADMIN request for ${hostname}${path} -> ${finalPath}`);
+  // 1. REESCRITURA PARA EL SUPER ADMIN PANEL (geoadminpanel)
+  if (hostname === `geoadminpanel.${rootDomain}`) {
+    isSuperAdminApp = true;
+    const finalPath = path === '/' ? '/superadmin' : `/superadmin${path}`;
+    console.log(`[PROXY] Rewriting SUPER ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
-  } else {
-    // 2. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
+  } 
+  // 2. REESCRITURA PARA EL TENANT ADMIN PANEL (app.geo-dev.online)
+  else if (hostname === `app.${rootDomain}`) {
+    isAdminApp = true;
+    const finalPath = path === '/' ? '/admin' : `/admin${path}`;
+    console.log(`[PROXY] Rewriting TENANT ADMIN request for ${hostname}${path} -> ${finalPath}`);
+    response = NextResponse.rewrite(new URL(finalPath, req.url));
+  }
+  // 3. REESCRITURA PARA LA LANDING PAGE PRINCIPAL
+  else if (
+    hostname === rootDomain || 
+    hostname === `www.${rootDomain}` ||
+    hostname.endsWith('.vercel.app') // Vercel direct links
+  ) {
+    // Es la app principal, no reescribimos nada fuera de lo normal
+    const finalPath = path;
+    console.log(`[PROXY] Rewriting MAIN LANDING request for ${hostname}${path} -> ${finalPath}`);
+    response = NextResponse.rewrite(new URL(finalPath, req.url));
+  } 
+  // 4. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
+  else {
     // Extraemos el subdominio limpio. Ej: salondeunas.geo-dev.online -> salondeunas
     const cleanSubdomain = hostname
       .replace(`.${rootDomain}`, '')
@@ -61,7 +71,7 @@ export default async function middleware(req: NextRequest) {
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   }
 
-  // 3. ACTUALIZAR SESIÓN DE SUPABASE
+  // 5. ACTUALIZAR SESIÓN DE SUPABASE
   // Esto refresca el token de auth si expiró, pasándole el request y el response de reescritura.
-  return await updateSession(req, response, isAdminApp);
+  return await updateSession(req, response, { isAdminApp, isSuperAdminApp });
 }
