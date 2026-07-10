@@ -5,17 +5,17 @@ import { motion } from 'framer-motion';
 import { CreditCard, Loader2, ShieldCheck, ExternalLink } from 'lucide-react';
 
 interface StripeCheckoutButtonProps {
-  plan: 'starter' | 'premium' | 'elite';
-  cycle: 'monthly' | 'yearly';
-  label?: string;
-  variant?: 'primary' | 'secondary';
+  priceId: string;
+  tenantId: string;
+  text?: string;
+  className?: string;
 }
 
 export default function StripeCheckoutButton({
-  plan,
-  cycle,
-  label = 'Mejorar mi plan',
-  variant = 'primary',
+  priceId,
+  tenantId,
+  text = 'Pagar Ahora',
+  className,
 }: StripeCheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function StripeCheckoutButton({
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, cycle, returnUrl: window.location.href }),
+        body: JSON.stringify({ priceId, tenantId, returnUrl: window.location.href }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -49,27 +49,26 @@ export default function StripeCheckoutButton({
   const base =
     'group inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed';
 
-  const styles =
-    variant === 'primary'
-      ? 'bg-gradient-to-r from-gold-light to-gold-primary text-[#121212] shadow-gold-glow hover:shadow-[0_10px_40px_-5px_rgba(229,193,88,0.6)] hover:-translate-y-0.5'
-      : 'bg-white/5 text-foreground border border-white/10 hover:bg-white/10 hover:border-white/20';
+  const defaultStyles = className 
+    ? className 
+    : 'bg-gradient-to-r from-gold-light to-gold-primary text-[#121212] shadow-gold-glow hover:shadow-[0_10px_40px_-5px_rgba(229,193,88,0.6)] hover:-translate-y-0.5';
 
   return (
     <div className="space-y-2">
       <button
         onClick={handleCheckout}
         disabled={isLoading}
-        className={`${base} ${styles}`}
+        className={`${className ? className : `${base} ${defaultStyles}`}`}
       >
         {isLoading ? (
           <>
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Conectando con Stripe…
+            Procesando…
           </>
         ) : (
           <>
             <CreditCard className="w-3.5 h-3.5" />
-            {label}
+            {text}
             <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
           </>
         )}

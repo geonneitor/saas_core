@@ -30,27 +30,33 @@ export async function POST(req: Request) {
 
     if (tenantId) {
       // 1. Obtener settings del negocio
-      const { data } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
-      settings = data;
+      const { data: settings } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
+      const { data: tenantData } = await supabase.from('tenants').select('setup_fee_paid').eq('id', tenantId).single();
       
+      // Validar periodo de prueba y pago de adquisición
+      const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at) : new Date(9999, 11, 31);
+      const isExpiredTrial = new Date() > trialEndsAt;
+      const isPaid = tenantData?.setup_fee_paid === true;
+
+      if (isExpiredTrial && !isPaid) {
+        if (isAdmin) {
+          return NextResponse.json({ reply: "⚠️ Tu periodo de prueba ha expirado y no has cubierto el costo de instalación de la IA. Por favor, adquiere tu sistema en la sección de facturación para reactivarme.", toolCalls: [] });
+        } else {
+          return NextResponse.json({ reply: "Fue un placer trabajar contigo... beep boop... me estoy apagando. *Desconectado*", toolCalls: [] });
+        }
+      }
+
       // Validar tokens de IA
       const limit = settings?.ai_tokens_limit || 0;
       const used = settings?.ai_tokens_used || 0;
+      const remaining = Math.max(0, limit - used);
       
-      if (used >= limit) {
+      if (remaining <= 0) {
         if (isAdmin) {
-          return NextResponse.json({ reply: "⚠️ Has alcanzado el límite de tokens de IA de tu plan. Actualiza tu saldo.", toolCalls: [] });
+          return NextResponse.json({ reply: "⚠️ Has alcanzado el límite de tokens de tu Billetera Prepago. Por favor, recarga saldo para reactivar mi servicio.", toolCalls: [] });
         } else {
-          return NextResponse.json({ reply: "El servicio de asistencia virtual no está disponible temporalmente.", toolCalls: [] });
+          return NextResponse.json({ reply: "beep boop... Fui desconectado temporalmente por falta de saldo operativo. Contacta a gerencia. *Ruido de módem apagándose*", toolCalls: [] });
         }
-      }
-      
-      const systemStatus = settings?.system_status || 'trial';
-      const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at) : new Date(9999, 11, 31);
-      const isExpiredTrial = systemStatus === 'trial' && new Date() > trialEndsAt;
-      
-      if (systemStatus === 'downgraded' || isExpiredTrial) {
-        return NextResponse.json({ reply: "beep boop... Fui desconectado por falta de fondos operativos. Contacta a gerencia. *Ruido de módem apagándose*", toolCalls: [] });
       }
 
       const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
