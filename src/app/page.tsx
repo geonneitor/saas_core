@@ -1,64 +1,82 @@
 import Link from 'next/link';
-import { ArrowRight, Terminal } from 'lucide-react';
+import { Shield, Zap, Database, Terminal } from 'lucide-react';
 import AiAssistantChat from '@/components/AiAssistantChat';
+import { OpenChatButton } from '@/components/OpenChatButton';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-foreground font-sans selection:bg-white/20 overflow-hidden relative flex flex-col justify-between">
-      {/* Brutalist Accents */}
-      <div className="absolute top-0 left-0 w-full h-2 bg-white" />
-      <div className="absolute top-8 left-8 text-[10px] font-mono tracking-widest uppercase opacity-50">
-        SYS. SAAS_CORE // GEO-DEV B2B
-      </div>
+    <div className="min-h-screen bg-[#050508] text-[#fafafa] font-sans selection:bg-[#ff0055] selection:text-white overflow-hidden relative">
+      {/* Background CRT/Grid Effect */}
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
       
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-24">
-        <div className="max-w-4xl mt-20">
-          <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl tracking-tighter leading-[0.9] mb-8 text-white mix-blend-difference">
-            SISTEMAS<br />
-            <span className="italic text-white/50">INTELIGENTES.</span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-neutral-400 max-w-2xl font-light tracking-tight leading-relaxed mb-12">
-            Deja de perder clientes por no contestar a tiempo. Tu propio Asistente de IA atiende, vende y agenda citas 24/7. Una infraestructura Zero Trust diseñada para negocios que quieren escalar.
-          </p>
+      <header className="relative z-20 px-8 py-6 flex justify-between items-center border-b border-white/10 backdrop-blur-md">
+        <div className="text-2xl font-black tracking-tighter uppercase text-white flex items-center gap-2">
+          GEO<span className="text-[#ff0055]">DEV</span>
+          <div className="w-2 h-2 bg-[#ff0055] animate-pulse rounded-none"></div>
+        </div>
+        <nav className="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+          <span className="hover:text-white transition-colors cursor-pointer">Sistemas</span>
+          <span className="hover:text-white transition-colors cursor-pointer">Seguridad</span>
+          <span className="hover:text-white transition-colors cursor-pointer">Métricas</span>
+        </nav>
+        <Link 
+          href="/login" 
+          className="text-[10px] uppercase font-bold tracking-[0.2em] px-4 py-2 border border-white/20 hover:border-white hover:bg-white hover:text-black transition-all"
+        >
+          Portal Admin
+        </Link>
+      </header>
 
-          <div className="flex flex-col sm:flex-row gap-6">
-            <Link 
-              href="https://wa.me/message/xyz" // O el contacto del vendedor
-              className="inline-flex items-center justify-between px-8 py-5 bg-white text-black text-xs font-bold uppercase tracking-[0.2em] hover:bg-neutral-200 transition-colors"
-            >
-              Solicitar mi Plataforma
-              <ArrowRight className="w-4 h-4 ml-4" />
-            </Link>
+      <main className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] px-6 py-12">
+        <div className="inline-flex items-center gap-2 border border-[#ff0055]/30 bg-[#ff0055]/10 text-[#ff0055] px-4 py-1.5 text-[9px] font-black tracking-[0.3em] uppercase mb-12 shadow-[0_0_15px_rgba(255,0,85,0.15)]">
+          <div className="w-1.5 h-1.5 bg-[#ff0055] rounded-full animate-ping"></div>
+          Estado Global: Online
+        </div>
+        
+        <h1 className="text-center font-black text-5xl md:text-8xl lg:text-9xl tracking-tighter leading-[0.85] uppercase mb-8 max-w-6xl">
+          Ingeniería <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-600">Web</span><br />
+          <span className="text-[#ff0055] font-serif italic font-light lowercase text-6xl md:text-8xl">de</span> Alto Calibre
+        </h1>
+        
+        <p className="text-center text-neutral-400 text-sm md:text-lg max-w-2xl font-light tracking-wide leading-relaxed mb-12">
+          Sistemas B2B con arquitectura Zero Trust y Asistentes de IA integrados que agendan citas 24/7. 
+          Deja de usar plantillas genéricas. Escala con código puro.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-8 items-center">
+          <OpenChatButton />
+          
+          <Link href="#arquitectura" className="text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-500 hover:text-[#ff0055] transition-all underline decoration-neutral-800 hover:decoration-[#ff0055] underline-offset-4">
+            Ver Arquitectura
+          </Link>
+        </div>
+
+        {/* Feature Grid (Brutalist style) */}
+        <div id="arquitectura" className="grid grid-cols-1 md:grid-cols-3 gap-1 mt-32 border border-white/10 bg-white/10 p-[1px] w-full max-w-5xl">
+          <div className="bg-[#050508] p-8 flex flex-col items-start hover:bg-[#0a0a0f] transition-colors border-l-2 border-transparent hover:border-[#ff0055]">
+            <Zap className="w-6 h-6 text-[#ff0055] mb-4" />
+            <h3 className="text-white font-bold tracking-widest text-xs uppercase mb-2">0.4s SSR Load</h3>
+            <p className="text-neutral-500 text-[11px] leading-relaxed">Carga inicial ultrarrápida usando Next.js App Router y Edge runtime.</p>
+          </div>
+          <div className="bg-[#050508] p-8 flex flex-col items-start hover:bg-[#0a0a0f] transition-colors border-l-2 border-transparent hover:border-[#ff0055]">
+            <Shield className="w-6 h-6 text-[#ff0055] mb-4" />
+            <h3 className="text-white font-bold tracking-widest text-xs uppercase mb-2">Zero Trust</h3>
+            <p className="text-neutral-500 text-[11px] leading-relaxed">Autenticación estricta con Supabase RLS. Datos encriptados end-to-end.</p>
+          </div>
+          <div className="bg-[#050508] p-8 flex flex-col items-start hover:bg-[#0a0a0f] transition-colors border-l-2 border-transparent hover:border-[#ff0055]">
+            <Database className="w-6 h-6 text-[#ff0055] mb-4" />
+            <h3 className="text-white font-bold tracking-widest text-xs uppercase mb-2">Multi-Tenant</h3>
+            <p className="text-neutral-500 text-[11px] leading-relaxed">Base de datos compartida pero lógicamente separada por inquilino empresarial.</p>
           </div>
         </div>
       </main>
 
-      {/* Footer & Login Link */}
-      <footer className="w-full px-8 py-8 flex flex-col sm:flex-row justify-between items-center border-t border-white/10 mt-20">
-        <div className="flex items-center gap-3 opacity-50 mb-4 sm:mb-0">
-          <Terminal className="w-4 h-4" />
-          <span className="text-[10px] font-mono uppercase tracking-widest">
-            Infraestructura Privada B2B
-          </span>
-        </div>
-
-        <Link 
-          href="/login" 
-          className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 hover:text-white transition-colors"
-        >
-          Acceso Administrador
-        </Link>
-      </footer>
-
-      {/* Demo AI Assistant */}
       <div className="fixed bottom-0 right-0 z-50 pointer-events-auto">
         <AiAssistantChat 
           tenantId="00000000-0000-0000-0000-000000000000" 
-          tenantName="Geo Dev (Demo)" 
-          aiAvatar="orb" 
-          tagline="Prueba mi IA en vivo. ¿En qué te ayudo?"
+          tenantName="debugGeo" 
+          aiAvatar="error404" 
+          tagline="Resolviendo problemas complejos. La IA hace exactamente lo que necesitas. *Beep boop*"
         />
       </div>
     </div>

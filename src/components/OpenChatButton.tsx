@@ -1,27 +1,18 @@
 "use client";
 
-import { Sparkles } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 
 export function OpenChatButton() {
   return (
     <button 
       onClick={() => {
-        // Busca el botón del chat por sus características para simular un clic y abrirlo
-        const chatButton = document.querySelector('button[title="Dictado por voz"]')?.parentElement?.parentElement?.parentElement?.parentElement?.querySelector('button');
-        if (chatButton) {
-           (chatButton as HTMLButtonElement).click();
-        } else {
-           // Fallback en caso de que la estructura cambie
-           const widgetBtn = document.querySelector('.fixed.bottom-6.right-6 button');
-           if (widgetBtn) (widgetBtn as HTMLButtonElement).click();
-        }
+        window.dispatchEvent(new CustomEvent('open-ai-chat'));
       }}
-      className="group relative inline-flex items-center justify-center px-8 py-4 font-sans font-semibold tracking-widest text-on-primary uppercase text-sm bg-gradient-to-r from-gold-light to-gold-primary rounded-full overflow-hidden transition-all hover:scale-105 shadow-gold-glow"
+      className="group relative inline-flex items-center justify-center px-10 py-5 font-sans font-bold tracking-[0.2em] uppercase text-xs bg-white text-black rounded-none border border-white hover:bg-transparent hover:text-white transition-all shadow-[8px_8px_0px_0px_rgba(255,255,255,0.15)] active:translate-y-1 active:translate-x-1 active:shadow-none"
     >
-      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
       <span className="relative flex items-center gap-3">
-        <Sparkles className="w-4 h-4" />
-        Agendar con IA
+        <Terminal className="w-4 h-4 group-hover:animate-pulse" />
+        Iniciar Secuencia de IA
       </span>
     </button>
   );

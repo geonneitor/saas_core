@@ -6,7 +6,7 @@ import { AvatarSystem } from './avatars/AvatarSystem';
 import { useBookingStore } from '@/store/useBookingStore';
 import { useRouter } from 'next/navigation';
 
-type AvatarVariant = 'lotito' | 'orb' | 'cat' | 'robot' | 'star';
+type AvatarVariant = 'lotito' | 'orb' | 'cat' | 'robot' | 'star' | 'error404';
 
 export default function AiAssistantChat({ 
   tenantId, 
@@ -38,6 +38,53 @@ export default function AiAssistantChat({
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
+
+  // DIAL-UP / FAX SOUND EFFECT FOR ERROR404
+  useEffect(() => {
+    if (isLoading && aiAvatar === 'error404') {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        const audioCtx = new AudioContextClass();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+        oscillator.frequency.linearRampToValueAtTime(2400, audioCtx.currentTime + 0.3);
+        
+        gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.5);
+        
+        const interval = setInterval(() => {
+          const osc = audioCtx.createOscillator();
+          const gn = audioCtx.createGain();
+          osc.type = Math.random() > 0.5 ? 'square' : 'sawtooth';
+          osc.frequency.setValueAtTime(400 + Math.random() * 2000, audioCtx.currentTime);
+          gn.gain.setValueAtTime(0.01 + Math.random() * 0.02, audioCtx.currentTime);
+          gn.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+          osc.connect(gn);
+          gn.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.1);
+        }, 150);
+
+        return () => {
+          clearInterval(interval);
+          if (audioCtx.state !== 'closed') audioCtx.close();
+        };
+      } catch (e) {
+        console.warn("AudioContext bloqueado. Se requiere interacción del usuario previa.");
+      }
+    }
+  }, [isLoading, aiAvatar]);
 
   useEffect(() => {
     const handleOpenChat = () => setIsOpen(true);

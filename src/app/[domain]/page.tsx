@@ -57,6 +57,9 @@ export default async function TenantLandingPage(props: {
     console.error(`[TENANT PAGE] Tenant not found or inactive for domain: "${domain}". Error:`, error);
     notFound();
   }
+  
+  const searchParams = await props.searchParams;
+  const isCustomDomain = searchParams.custom_domain === 'true';
 
   const { data: { user } } = await supabase.auth.getUser();
   let isAdmin = !!(user && tenant.owner_id === user.id);
@@ -67,7 +70,7 @@ export default async function TenantLandingPage(props: {
       isAdmin = true;
     }
   }
-  const searchParams = await props.searchParams;
+  
   if (process.env.NODE_ENV === 'development' && searchParams.demo_admin === 'true') {
     isAdmin = true;
   }
@@ -77,6 +80,17 @@ export default async function TenantLandingPage(props: {
   const settings = Array.isArray(tenant.business_settings) 
     ? tenant.business_settings[0] 
     : tenant.business_settings;
+    
+  const systemStatus = settings?.system_status || 'trial';
+  
+  if (systemStatus === 'downgraded' && isCustomDomain && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#111317] flex flex-col items-center justify-center text-white p-6 text-center">
+        <h1 className="text-3xl font-serif text-gold-primary mb-4">Dominio Inactivo</h1>
+        <p className="text-muted-foreground max-w-md">El dominio personalizado de este negocio se encuentra temporalmente suspendido.</p>
+      </div>
+    );
+  }
     
   const aiAvatar = settings?.ai_avatar || 'lotito';
   const tagline = settings?.brand_tagline || 'Excelencia y exclusividad en cada detalle.';
@@ -180,13 +194,15 @@ export default async function TenantLandingPage(props: {
         </a>
       )}
 
-      <AiAssistantChat 
-        tenantId={tenant.id} 
-        tenantName={tenant.name} 
-        aiAvatar={aiAvatar as any} 
-        tagline={tagline}
-        isAdmin={isAdmin} 
-      />
+      {systemStatus !== 'downgraded' && (
+        <AiAssistantChat 
+          tenantId={tenant.id} 
+          tenantName={tenant.name} 
+          aiAvatar={aiAvatar as any} 
+          tagline={tagline}
+          isAdmin={isAdmin} 
+        />
+      )}
       
       {settings?.use_calendar !== false && (
         <BookingModal tenantId={tenant.id} />

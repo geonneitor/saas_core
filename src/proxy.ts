@@ -15,7 +15,7 @@ export const config = {
   ],
 };
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const url = req.nextUrl;
 
   // Obtenemos el hostname actual (ej: "mibarberia.localhost:3000" o "mibarberia.geo-dev.online")
@@ -66,9 +66,14 @@ export default async function middleware(req: NextRequest) {
       .replace(`.${rootDomain}`, '')
       .replace('.localhost', '');
       
+    const isCustomDomain = hostname !== rootDomain && hostname !== `www.${rootDomain}` && !hostname.endsWith('.vercel.app');
     const finalPath = path === '/' ? `/${cleanSubdomain}` : `/${cleanSubdomain}${path}`;
+    const urlWithParams = new URL(finalPath, req.url);
+    if (isCustomDomain) {
+      urlWithParams.searchParams.set('custom_domain', 'true');
+    }
     console.log(`[PROXY] Rewriting TENANT request for ${hostname}${path} -> ${finalPath}`);
-    response = NextResponse.rewrite(new URL(finalPath, req.url));
+    response = NextResponse.rewrite(urlWithParams);
   }
 
   // 5. ACTUALIZAR SESIÓN DE SUPABASE

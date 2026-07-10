@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type AvatarVariant = 'lotito' | 'orb' | 'cat' | 'robot' | 'star';
+type AvatarVariant = 'lotito' | 'orb' | 'cat' | 'robot' | 'star' | 'error404';
 
 interface AvatarProps {
   variant: AvatarVariant;
@@ -130,6 +130,57 @@ export function AvatarSystem({ variant, isActive = false }: AvatarProps) {
       {variant === 'cat' && renderCat()}
       {variant === 'robot' && renderRobot()}
       {variant === 'star' && renderStar()}
+      {variant === 'error404' && (
+        <motion.svg width="64" height="64" viewBox="0 0 100 100" fill="none" style={{ overflow: 'visible' }}>
+          <g>
+            {/* Cuerpo / Camiseta */}
+            <path d="M30 65 L70 65 L75 95 L25 95 Z" fill="#1c1917" /> {/* Camisa negra */}
+            <text x="50" y="85" fill="#fafafa" fontSize="16" fontFamily="monospace" fontWeight="bold" textAnchor="middle">404</text>
+            
+            {/* Brazos */}
+            <path d="M25 70 Q10 75 15 90" stroke="#78716c" strokeWidth="6" fill="none" strokeLinecap="round" />
+            <path d="M75 70 Q90 75 85 90" stroke="#78716c" strokeWidth="6" fill="none" strokeLinecap="round" />
+            
+            {/* Cabeza Monitor (Roto) */}
+            <rect x="15" y="15" width="70" height="50" rx="6" fill="#a8a29e" /> {/* Carcasa gris */}
+            <rect x="20" y="20" width="60" height="40" fill="#09090b" /> {/* Pantalla negra */}
+            
+            {/* SMPTE Glitch Pattern */}
+            <rect x="20" y="20" width="12" height="25" fill="#ef4444" opacity="0.8" />
+            <rect x="32" y="20" width="12" height="25" fill="#eab308" opacity="0.8" />
+            <rect x="44" y="20" width="12" height="25" fill="#22c55e" opacity="0.8" />
+            <rect x="56" y="20" width="12" height="25" fill="#3b82f6" opacity="0.8" />
+            <rect x="68" y="20" width="12" height="25" fill="#d946ef" opacity="0.8" />
+            
+            {/* Exposed Electronics / Broken Glass */}
+            <path d="M45 20 L55 35 L50 60" stroke="#22c55e" strokeWidth="1" fill="none" />
+            <rect x="48" y="45" width="8" height="8" fill="#166534" />
+            <circle cx="52" cy="49" r="1.5" fill="#eab308" />
+            <path d="M20 20 L40 40" stroke="#fafafa" strokeWidth="1.5" opacity="0.5" />
+            <path d="M80 40 L60 60" stroke="#fafafa" strokeWidth="1.5" opacity="0.5" />
+            
+            {/* Glitch animations */}
+            {isActive && (
+              <motion.rect x="20" y="30" width="60" height="4" fill="#fafafa" opacity="0.5"
+                animate={{ y: [0, 20, 0, 10, -5], opacity: [0.1, 0.8, 0.2, 0.5, 0] }}
+                transition={{ duration: 0.5, repeat: Infinity, repeatType: "mirror" }}
+              />
+            )}
+            
+            {/* Ojos / Pixelados a medio morir */}
+            <rect x="30" y="35" width="10" height="8" fill="#ef4444" />
+            <rect x="60" y="35" width="10" height="8" fill="#ef4444" opacity="0.3" />
+            
+            {/* Fallo eléctrico (Chispas) */}
+            {isActive && (
+              <motion.circle cx="45" cy="20" r="2" fill="#eab308"
+                animate={{ opacity: [0, 1, 0], scale: [1, 1.5, 1], x: [0, -5, -10], y: [0, -5, -10] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+              />
+            )}
+          </g>
+        </motion.svg>
+      )}
     </motion.div>
   );
 }

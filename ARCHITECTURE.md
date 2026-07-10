@@ -8,6 +8,7 @@
 ## 1. 🎯 Objetivos del Proyecto y Visión
 - **Idea Original:** Una plataforma SaaS multi-tenant diseñada para ofrecer herramientas de administración y un Asistente de IA integrado, permitiendo a los clientes (tenants) gestionar sus negocios, citas y configuraciones de manera automatizada.
 - **Misión Financiera:** Generar revenue (flujo de caja) lo antes posible, manteniendo los costos operativos al mínimo absoluto (arquitectura serverless, capa gratuita prioritaria).
+- **Motor de Growth Hacking (Demostración de ROI):** El sistema debe venderse solo. Los módulos adicionales (add-ons) deben incluir "comprobaciones de valor" proactivas (ej. la IA enviando reportes automáticos de aumento de citas, reducción de ausencias, o comparativas de crecimiento) para que el comerciante perciba la herramienta como un activo que multiplica su dinero, incentivando el upselling natural.
 - **Estándar de Calidad:** UI/UX premium. Interfaces que transmitan prestigio (estilo Silicon Valley, animaciones sutiles, tipografías limpias como *Geist*). Cero componentes genéricos, todo debe sentirse de primer nivel.
 
 ## 2. 🛠️ Stack Tecnológico (Herramientas al Alcance)
