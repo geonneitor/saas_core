@@ -104,7 +104,12 @@ export default async function SettingsPage(props: {
         )}
 
         {currentTab === 'wallet' && (
-          <WalletDashboard />
+          <WalletDashboard 
+            tokensUsed={settings?.ai_tokens_used || 0}
+            tokensLimit={settings?.ai_tokens_limit || 0}
+            tenantId={tenant.id}
+            hasPromo={tenant.setup_advance_paid && !tenant.setup_fee_paid}
+          />
         )}
       </div>
     </div>
