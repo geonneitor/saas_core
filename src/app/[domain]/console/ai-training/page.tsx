@@ -70,7 +70,7 @@ export default async function AITrainingPage(props: { params: Promise<{ domain: 
           </div>
         </div>
 
-        <ServicesManager tenantId={tenant.id} />
+        <ServicesManager tenantId={tenant.id} initialServices={settings?.services_json || []} />
       </section>
 
       {/* Strict Business Rules */}
@@ -85,7 +85,7 @@ export default async function AITrainingPage(props: { params: Promise<{ domain: 
           </div>
         </div>
         
-        <BusinessRulesManager tenantId={tenant.id} currentPrompt={aiPrompt} />
+        <BusinessRulesManager tenantId={tenant.id} currentRules={settings?.ai_rules || ''} />
       </section>
       
     </div>

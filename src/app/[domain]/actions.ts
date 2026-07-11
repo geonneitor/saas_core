@@ -58,7 +58,7 @@ export async function bookAppointment(tenantId: string, data: { clientName: stri
   }
 }
 
-export async function updateAiSettings(tenantId: string, data: { ai_avatar?: string, ai_prompt?: string, groq_api_key?: string }) {
+export async function updateAiSettings(tenantId: string, data: { ai_avatar?: string, ai_prompt?: string, groq_api_key?: string, ai_tone?: string, services_json?: any, ai_rules?: string }) {
   const supabase = await createClient();
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();
