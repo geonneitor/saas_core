@@ -21,8 +21,8 @@ export default function SuperAdminLayout({
         </div>
 
         <nav className="flex-1 space-y-2">
-          <a href="/superadmin" className="flex items-center gap-3 text-sm px-4 py-2.5 bg-white/5 text-white rounded-md ring-1 ring-white/10 transition-all">
-            <LayoutDashboard size={16} className="text-white/70" />
+          <a href="/hq" className="flex items-center gap-3 text-sm px-4 py-2.5 bg-white/5 text-white rounded-md ring-1 ring-white/10 transition-all">
+            <LayoutDashboard size={18} className="text-emerald-400" />
             Tenants
           </a>
           <a href="#" className="flex items-center gap-3 text-sm px-4 py-2.5 text-white/50 hover:text-white hover:bg-white/5 rounded-md transition-all">

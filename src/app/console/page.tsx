@@ -1,56 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { revalidatePath } from 'next/cache';
 import { DeleteTenantForm } from './DeleteTenantForm';
-import { ArrowRight, Terminal, Shield, Database, Plus, Sparkles, Building2 } from 'lucide-react';
-import Link from 'next/link';
+import { CreateTenantForm } from './CreateTenantForm';
+import { UpdateTokenLimitForm } from './UpdateTokenLimitForm';
+import { deleteTenant } from './actions';
+import { ArrowRight, Terminal, Shield, Database, Building2 } from 'lucide-react';
 
 export default async function AdminPage() {
   const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
   const supabase = await createClient();
   
   const { data: tenants, error } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
-
-  async function createTenant(formData: FormData) {
-    'use server';
-    const supabase = createAdminClient();
-    const name = formData.get('name') as string;
-    const rawSubdomain = formData.get('subdomain') as string;
-    const subdomain = rawSubdomain.split('.')[0].toLowerCase().replace(/[^a-z0-9-]/g, '');
-    
-    const { data: tenant, error } = await supabase.from('tenants').insert({ name, subdomain, is_active: true }).select().single();
-    
-    if (tenant && !error) {
-      await supabase.from('business_settings').insert({
-        tenant_id: tenant.id,
-        ai_prompt: `Eres el asistente virtual experto de ${name}. Eres sumamente educado, amable y resolutivo. Tu único objetivo es agendar citas.`,
-        opening_time: '09:00:00',
-        closing_time: '20:00:00',
-        ai_tokens_limit: 1000 // Inicializar con 1000 tokens para la prueba de 7 días
-      });
-    }
-
-    if (error) console.error("Error creating tenant:", error);
-    revalidatePath('/admin');
-  }
-
-  async function deleteTenant(formData: FormData) {
-    'use server';
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    if (profile?.role !== 'super_admin') return;
-
-    const id = formData.get('id') as string;
-    const adminSupabase = createAdminClient();
-    await adminSupabase.from('tenants').delete().eq('id', id);
-    
-    revalidatePath('/admin');
-    revalidatePath('/', 'layout');
-  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-foreground font-sans selection:bg-gold-primary/30 selection:text-gold-light p-6 md:p-12 relative overflow-hidden">
@@ -87,50 +46,7 @@ export default async function AdminPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* COLUMNA IZQUIERDA: CREAR TENANT */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 card-depth backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-gold-primary/10 border border-gold-primary/30 flex items-center justify-center mb-6">
-                <Plus className="w-5 h-5 text-gold-primary" />
-              </div>
-              <h2 className="font-serif text-2xl text-white mb-2">Desplegar Inquilino</h2>
-              <p className="text-sm text-muted-foreground mb-8">Provisiona un nuevo entorno aislado (Tenant) con 1000 tokens iniciales.</p>
-
-              <form action={createTenant} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-gold-primary font-bold">Nombre Comercial</label>
-                  <input 
-                    type="text" 
-                    name="name" 
-                    required 
-                    autoComplete="off"
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-gold-primary/50 focus:ring-1 focus:ring-gold-primary/50 transition-all placeholder:text-white/20" 
-                    placeholder="Ej: Barbería The King" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-gold-primary font-bold">Subdominio Único</label>
-                  <div className="flex items-stretch">
-                    <input 
-                      type="text" 
-                      name="subdomain" 
-                      required 
-                      autoComplete="off"
-                      className="w-full bg-black/50 border border-white/10 border-r-0 rounded-l-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-gold-primary/50 focus:ring-1 focus:ring-gold-primary/50 transition-all placeholder:text-white/20" 
-                      placeholder="theking" 
-                    />
-                    <div className="bg-white/5 border border-white/10 rounded-r-xl px-4 flex items-center text-xs text-muted-foreground font-mono">
-                      .{domain}
-                    </div>
-                  </div>
-                </div>
-                <button 
-                  type="submit" 
-                  className="w-full mt-4 btn-premium-gold px-6 py-4 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Crear y Provisionar
-                </button>
-              </form>
-            </div>
+            <CreateTenantForm domain={domain} />
           </div>
 
           {/* COLUMNA DERECHA: LISTA DE TENANTS */}
@@ -168,6 +84,14 @@ export default async function AdminPage() {
                       {tenant.subdomain}.{domain}
                       <ArrowRight className="w-3 h-3" />
                     </a>
+
+                    <div className="mt-6 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-[10px] uppercase font-mono text-muted-foreground">
+                        <span>Límite (Tokens/Citas IA)</span>
+                        <span>Usados: {tenant.ai_tokens_used || 0}</span>
+                      </div>
+                      <UpdateTokenLimitForm tenantId={tenant.id} currentLimit={tenant.ai_token_limit} />
+                    </div>
 
                     <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground font-mono">

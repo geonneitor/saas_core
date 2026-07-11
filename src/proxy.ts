@@ -34,17 +34,23 @@ export default async function proxy(req: NextRequest) {
   let isAdminApp = false;
   let isSuperAdminApp = false;
 
-  // 1. REESCRITURA PARA EL SUPER ADMIN PANEL (geoadminpanel)
-  if (hostname === `geoadminpanel.${rootDomain}`) {
+  // 1. REESCRITURA PARA EL SUPER ADMIN PANEL (hq)
+  if (hostname === `hq.${rootDomain}`) {
     isSuperAdminApp = true;
-    const finalPath = path === '/' ? '/superadmin' : `/superadmin${path}`;
+    let finalPath = path;
+    if (!path.startsWith('/login') && !path.startsWith('/auth')) {
+      finalPath = path === '/' ? '/hq' : `/hq${path}`;
+    }
     console.log(`[PROXY] Rewriting SUPER ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } 
   // 2. REESCRITURA PARA EL TENANT ADMIN PANEL (app.geo-dev.online)
   else if (hostname === `app.${rootDomain}`) {
     isAdminApp = true;
-    const finalPath = path === '/' ? '/admin' : `/admin${path}`;
+    let finalPath = path;
+    if (!path.startsWith('/login') && !path.startsWith('/auth')) {
+      finalPath = path === '/' ? '/console' : `/console${path}`;
+    }
     console.log(`[PROXY] Rewriting TENANT ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   }
@@ -68,11 +74,17 @@ export default async function proxy(req: NextRequest) {
       
     const isCustomDomain = hostname !== rootDomain && hostname !== `www.${rootDomain}` && !hostname.endsWith('.vercel.app');
     const finalPath = path === '/' ? `/${cleanSubdomain}` : `/${cleanSubdomain}${path}`;
+    
+    // Create new URL and append existing search params
     const urlWithParams = new URL(finalPath, req.url);
+    req.nextUrl.searchParams.forEach((value, key) => {
+      urlWithParams.searchParams.set(key, value);
+    });
+
     if (isCustomDomain) {
       urlWithParams.searchParams.set('custom_domain', 'true');
     }
-    console.log(`[PROXY] Rewriting TENANT request for ${hostname}${path} -> ${finalPath}`);
+    console.log(`[PROXY] Rewriting TENANT request for ${hostname}${path} -> ${urlWithParams.pathname}${urlWithParams.search}`);
     response = NextResponse.rewrite(urlWithParams);
   }
 

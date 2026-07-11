@@ -40,3 +40,7 @@ Como Co-Founder Técnico y Lead Architect, las siguientes reglas rigen toda inte
   - Optimización de tool calling y falbacks en `/api/assistant`.
   - Refinamiento de la UX (Avatares flotantes, métricas claras).
   - Mantenimiento y modernización del framework (Deprecation de Middleware en Next 16).
+  - **Fase 1 (Arquitectura Silicon Valley):** Renombramiento de rutas core a `/hq` (SuperAdmin) y `/console` (Command Center) para asegurar estándares B2B. Resolución de bloqueos Zero-Trust en Landing Pages mediante `createAdminClient` para lectura pública, y ajuste dinámico de cookies multi-dominio en `proxy.ts` y middleware.
+
+## 6. 🧊 Icebox / Ideas a Futuro (Post-Monetización)
+- **Voice-Command Control (Estilo Alexa):** Control del sistema mediante biometría/reconocimiento de voz para operar dashboards sin manos. *Nota del Arquitecto: Retenido estratégicamente hasta que el SaaS genere flujo de caja estable.*

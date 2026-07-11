@@ -13,10 +13,17 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+      const isConsoleApp = window.location.hostname.startsWith('app.');
+      const isHqApp = window.location.hostname.startsWith('hq.');
+      let nextPath = '/console'; // Default to Command Center
+      
+      if (isConsoleApp) nextPath = '/console';
+      if (isHqApp) nextPath = '/hq';
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/admin`
+          redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}`
         }
       });
       if (error) throw error;

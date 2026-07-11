@@ -1,14 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
 import AiAssistantChat from '@/components/AiAssistantChat';
-import { BookingModal } from '@/components/BookingModal';
 import { AvatarSelector } from '@/components/AvatarSelector';
 
 import { PremiumHero } from '@/components/tenant-ui/PremiumHero';
 import { DynamicManifesto } from '@/components/tenant-ui/DynamicManifesto';
-import { StyleSelector } from '@/components/tenant-ui/StyleSelector';
+import { LiveTrialWizard } from '@/components/tenant-ui/LiveTrialWizard';
 
 import type { Metadata } from 'next';
 
@@ -17,15 +17,17 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const params = await props.params;
   const domain = params.domain;
-  const supabase = await createClient();
+  // Use admin client to bypass RLS for public tenant data (e.g. settings/brand)
+  const supabaseAdmin = createAdminClient();
 
-  const { data: tenant } = await supabase
+  const { data: tenant, error } = await supabaseAdmin
     .from('tenants')
-    .select('name, business_settings(brand_tagline)')
+    .select('name, business_settings(*)')
     .eq('subdomain', domain)
     .single();
 
-  if (!tenant) {
+  if (error || !tenant) {
+    console.error("[METADATA] Tenant fetch error for domain", domain, error);
     return { title: 'Página no encontrada' };
   }
 
@@ -45,9 +47,10 @@ export default async function TenantLandingPage(props: {
   const params = await props.params;
   const domain = params.domain;
   const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
 
-  // 1. Validar Inquilino
-  const { data: tenant, error } = await supabase
+  // 1. Validar Inquilino (Admin Client para lectura pública)
+  const { data: tenant, error } = await supabaseAdmin
     .from('tenants')
     .select('*, business_settings(*)')
     .eq('subdomain', domain)
@@ -71,7 +74,7 @@ export default async function TenantLandingPage(props: {
     }
   }
   
-  if (process.env.NODE_ENV === 'development' && searchParams.demo_admin === 'true') {
+  if (process.env.NODE_ENV === 'development') {
     isAdmin = true;
   }
   
@@ -111,9 +114,9 @@ export default async function TenantLandingPage(props: {
   return (
     <div className={`min-h-screen ${theme === 'light-minimal' ? 'bg-[#fafafa]' : 'bg-[#111317]'} selection:bg-primary selection:text-on-primary overflow-x-hidden`}>
       {isAdmin && (
-        <StyleSelector 
+        <LiveTrialWizard 
           tenantId={tenant.id} 
-          currentSettings={{ theme, font, hero_image: heroImage }} 
+          currentSettings={{ theme, font, hero_image: heroImage, brand_tagline: tagline, ai_avatar: aiAvatar as string }} 
         />
       )}
 
@@ -127,12 +130,12 @@ export default async function TenantLandingPage(props: {
         </div>
         
         <div className="flex items-center gap-4">
-          <AvatarSelector tenantId={tenant.id} currentAvatar={aiAvatar as string} isAdmin={isAdmin} />
           {isAdmin && (
-            <Link href="/admin" className="btn-premium-gold px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg">
-              Ir al Panel
+            <Link href={process.env.NODE_ENV === 'development' ? "/console?demo_admin=true" : "/console"} className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-gold-primary/30 text-gold-primary hover:bg-gold-primary/10 transition-colors">
+              Ir a Consola
             </Link>
           )}
+          <AvatarSelector tenantId={tenant.id} currentAvatar={aiAvatar as string} isAdmin={false} />
         </div>
       </nav>
 
@@ -202,10 +205,6 @@ export default async function TenantLandingPage(props: {
           tagline={tagline}
           isAdmin={isAdmin} 
         />
-      )}
-      
-      {settings?.use_calendar !== false && (
-        <BookingModal tenantId={tenant.id} />
       )}
     </div>
   );

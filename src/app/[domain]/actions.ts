@@ -106,7 +106,7 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
   }
 }
 
-export async function updateVisualSettings(tenantId: string, data: { theme?: string, font?: string, hero_image?: string }) {
+export async function updateVisualSettings(tenantId: string, data: { theme?: string, font?: string, hero_image?: string, brand_tagline?: string }) {
   const supabase = await createClient();
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();

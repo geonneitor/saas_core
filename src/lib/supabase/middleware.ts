@@ -16,11 +16,25 @@ export async function updateSession(
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          const domain = process.env.NODE_ENV === 'development' ? 'localhost' : '.geo-dev.online';
+          const host = request.headers.get('host') || '';
+          const isLocal = process.env.NODE_ENV === 'development';
+          let cookieDomain: string | undefined = undefined;
+          
+          if (isLocal) {
+            cookieDomain = 'localhost';
+          } else if (host.includes('geo-dev.online')) {
+            cookieDomain = '.geo-dev.online';
+          }
+
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, { ...options, domain })
-          )
+          cookiesToSet.forEach(({ name, value, options }) => {
+            if (cookieDomain) {
+              response.cookies.set(name, value, { ...options, domain: cookieDomain })
+            } else {
+              const { domain, ...safeOptions } = options;
+              response.cookies.set(name, value, { ...safeOptions })
+            }
+          })
         },
       },
     }
@@ -62,7 +76,7 @@ export async function updateSession(
 
   // 2. Proteger rutas de Tenant Admin (SaaS Core)
   if (isAdminApp && !isSuperAdminApp) {
-    if (!user && !isAuthRoute && (request.nextUrl.pathname.startsWith('/admin') || request.nextUrl.pathname === '/')) {
+    if (!user && !isAuthRoute && (request.nextUrl.pathname.startsWith('/console') || request.nextUrl.pathname === '/')) {
       // Si no hay user, forzamos login.
       const loginUrl = request.nextUrl.clone()
       loginUrl.pathname = '/login'
@@ -72,7 +86,7 @@ export async function updateSession(
     // Si ya está logueado y trata de ir a login EN LA APP DE ADMIN, mandarlo al admin
     if (user && isAuthRoute) {
       const adminUrl = request.nextUrl.clone()
-      adminUrl.pathname = '/admin'
+      adminUrl.pathname = '/console'
       return NextResponse.redirect(adminUrl)
     }
   }

@@ -36,6 +36,8 @@ Mientras `zen` demostró el modelo de negocio y el estándar de diseño (Dark Lu
 | Directorio / Archivo | Función / Rol en el Sistema |
 |----------------------|-----------------------------|
 | `src/app/[domain]/` | El motor del multi-tenant. Maneja las solicitudes rutéandolas dinámicamente según el subdominio del cliente (tenant). |
+| `src/app/hq/` | Headquarters. Dashboard central para el dueño del SaaS (métricas, consumos globales, mapas). Antiguamente `/superadmin`. |
+| `src/app/console/` | Command Center. Zona de aprovisionamiento donde se crean/eliminan clientes (tenants). Antiguamente `/admin`. |
 | `src/app/api/assistant/route.ts` | El cerebro de la IA. Gestiona la comunicación con Groq, inyecta contexto de base de datos y expone herramientas (`create_appointment`, `search_client_info`, `cancel_appointment`). |
 | `src/components/AiAssistantChat.tsx` | UI principal del chatbot. Maneja la interacción en tiempo real del tenant con su asistente virtual. |
 | `src/components/BookingModal.tsx` | Interfaz visual (legacy/alternativa) para agendar citas sin IA. |
@@ -65,6 +67,11 @@ Mientras `zen` demostró el modelo de negocio y el estándar de diseño (Dark Lu
     - Se parcheó el renderizado de imágenes rotas (404) inyectando fallbacks dinámicos hacia Unsplash en la Landing de inquilinos.
     - Se corrigieron los Server Actions (`updateVisualSettings`, `updateAiSettings`) permitiendo que el rol `super_admin` evada restricciones de propietario (Zero Trust Bypass) para facilitar configuración global.
 - **Sprint 6 (Automatización):** Integración con API de WhatsApp para que la IA responda por canales directos.
+- **Sprint 7 (Silicon Valley Refactor - Fase 1 a 4) [Julio 2026]:**
+  - **Reestructuración de Rutas:** Se modularizó y renombró el dashboard de métricas globales (`/superadmin` ➔ `/hq`) y el panel de provisionamiento (`/admin` ➔ `/console`) para alinearse con estándares de Big Tech.
+  - **Fragmentación de Interfaces (Clean UI):** La Landing Page brutalista fue descompuesta en componentes de cliente (`PublicNavbar`, `PublicHero`, `PublicFeatureGrid`) preparados nativamente para soportar animaciones 3D e inyecciones de `framer-motion`. Así mismo, se extrajeron tablas y métricas del HQ Dashboard.
+  - **Resolución Error 404 (Prospectos):** Desbloqueo de lectura pública de UI en `src/app/[domain]/page.tsx` mediante `createAdminClient`, evadiendo RLS estricto de forma segura.
+  - **Sesiones Cross-Origin:** Refactorización de cookies de sesión para soportar dominios personalizados (`mibarberia.com`) dinámicamente.
 
 ---
 
