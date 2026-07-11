@@ -179,9 +179,20 @@ export default async function TenantLandingPage(props: {
           <div className="flex items-center gap-3">
             <span className={`${font === 'serif' ? 'font-serif' : 'font-sans'} font-bold text-xl`}>{tenant.name}</span>
           </div>
-          <p className="text-xs uppercase tracking-widest opacity-50">
-            © {new Date().getFullYear()} {tenant.name}. Reservas gestionadas por Inteligencia Artificial.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <p className="text-xs uppercase tracking-widest opacity-50">
+              © {new Date().getFullYear()} {tenant.name}.
+            </p>
+            <a 
+              href={process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000' : 'https://app.tu-dominio.com'} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-bold uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors opacity-70 hover:opacity-100 flex items-center gap-2"
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2" fill="none" className="text-gold-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Powered by AI
+            </a>
+          </div>
         </div>
       </footer>
 
