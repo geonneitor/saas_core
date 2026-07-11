@@ -8,16 +8,26 @@ export function PurchaseButton({ tenantId, moduleId, price, title }: { tenantId:
 
   const handlePurchase = async () => {
     setIsLoading(true);
-    // TODO: Llamar a /api/stripe/checkout pasándole el moduleId y tenantId
-    // const res = await fetch('/api/stripe/checkout', { method: 'POST', body: JSON.stringify({ moduleId, tenantId }) });
-    // const { url } = await res.json();
-    // window.location.href = url;
-    
-    // Simulación temporal:
-    setTimeout(() => {
-      alert(`Pronto te redirigiremos a Stripe para pagar $${price} USD por ${title}`);
+    try {
+      const res = await fetch('/api/stripe/checkout', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId, tenantId, price, title }) 
+      });
+      
+      const data = await res.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Error al iniciar el pago');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error de conexión con Stripe');
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
