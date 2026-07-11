@@ -19,7 +19,16 @@ export default async function PartnerDashboardPage(props: {
     redirect(process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000/login' : 'https://app.tu-dominio.com/login');
   }
 
-  // TODO: Fetch real ROI metrics here in the future
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('ai_tokens_used, ai_token_limit')
+    .eq('subdomain', params.domain)
+    .single();
+
+  const tokensUsed = tenant?.ai_tokens_used || 0;
+  const tokenLimit = tenant?.ai_token_limit || 100000;
+  const tokenPercentage = Math.min(100, Math.round((tokensUsed / tokenLimit) * 100));
+  const isNearLimit = tokenPercentage >= 90;
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="space-y-2">
@@ -35,11 +44,31 @@ export default async function PartnerDashboardPage(props: {
           <p className="text-xs text-emerald-400 mt-2">+0% esta semana</p>
         </div>
 
-        {/* Placeholder ROI Card 2 */}
-        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 card-depth">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">Horas Ahorradas</p>
-          <p className="text-4xl font-serif">0<span className="text-lg text-muted-foreground ml-1">hrs</span></p>
-          <p className="text-xs text-muted-foreground mt-2">Equivalente a $0 USD</p>
+        {/* Placeholder ROI Card 2 (Token Usage) */}
+        <div className={`bg-white/[0.02] border rounded-2xl p-6 card-depth relative overflow-hidden ${isNearLimit ? 'border-red-500/50' : 'border-white/5'}`}>
+          {isNearLimit && (
+            <div className="absolute top-0 left-0 w-full h-1 bg-red-500 animate-pulse" />
+          )}
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+            Interacciones IA Usadas
+          </p>
+          <div className="flex items-end gap-2 mb-2">
+            <p className={`text-4xl font-serif ${isNearLimit ? 'text-red-400' : 'text-white'}`}>{tokensUsed.toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground mb-1">/ {tokenLimit.toLocaleString()}</p>
+          </div>
+          
+          <div className="w-full bg-black/40 h-1.5 rounded-full mt-4 overflow-hidden">
+            <div 
+              className={`h-full rounded-full ${isNearLimit ? 'bg-red-500' : 'bg-gold-primary'}`}
+              style={{ width: `${tokenPercentage}%` }}
+            />
+          </div>
+          
+          {isNearLimit ? (
+            <p className="text-xs text-red-400 mt-3 font-medium">⚠️ Estás a punto de alcanzar tu límite.</p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-3">Plan Estándar (Activo)</p>
+          )}
         </div>
       </div>
 

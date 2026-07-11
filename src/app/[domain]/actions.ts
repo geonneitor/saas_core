@@ -8,6 +8,17 @@ export async function bookAppointment(tenantId: string, data: { clientName: stri
   const supabase = createAdminClient();
 
   try {
+    // 0. Check Token Limits
+    const { data: tenantLimits } = await supabase
+      .from('tenants')
+      .select('ai_tokens_used, ai_token_limit')
+      .eq('id', tenantId)
+      .single();
+
+    if (tenantLimits && tenantLimits.ai_tokens_used >= tenantLimits.ai_token_limit) {
+      return { success: false, error: 'Límite de IA alcanzado. Por favor, contacta a soporte para ampliar tu plan.' };
+    }
+
     // 1. Buscar o crear cliente
     let customerId;
     const { data: existingCustomer } = await supabase
@@ -48,6 +59,12 @@ export async function bookAppointment(tenantId: string, data: { clientName: stri
       });
 
     if (aptError) throw aptError;
+
+    // 3. Simular consumo de tokens de la IA (Ej: 150 tokens por la conversación)
+    await supabase
+      .from('tenants')
+      .update({ ai_tokens_used: (tenantLimits?.ai_tokens_used || 0) + 150 })
+      .eq('id', tenantId);
 
     // Refrescar el calendario del inquilino
     revalidatePath('/', 'layout');
