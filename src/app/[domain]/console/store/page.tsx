@@ -64,7 +64,7 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
         </p>
       </header>
 
-      {/* REFERRAL SYSTEM (Growth Loop) */}
+      {/* AMBASSADOR SYSTEM (Growth Loop) */}
       <section className="bg-gradient-to-r from-gold-primary/20 via-black/40 to-black/40 border border-gold-primary/30 rounded-3xl p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <Share2 className="w-48 h-48" />
@@ -72,14 +72,14 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
         
         <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
           <div>
-            <h2 className="text-2xl font-serif font-bold mb-2 text-gold-light">Desbloquea Módulos GRATIS</h2>
+            <h2 className="text-2xl font-serif font-bold mb-2 text-gold-light">Programa de Embajadores B2B</h2>
             <p className="text-sm text-white/80 mb-6">
-              Invita a 5 dueños de negocio usando tu enlace. Cuando ellos se unan, te regalamos un módulo al 50% y saldo para tu IA.
+              Recomiéndanos con 5 negocios de <strong className="text-gold-primary">otras industrias</strong> (para proteger tu exclusividad) y recibe <strong className="text-emerald-400">$50 USD en efectivo</strong> ($10 USD por cada uno).
             </p>
             
             <div className="bg-black/50 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
               <div className="font-mono text-sm text-gold-primary break-all">
-                app.tu-dominio.com/join?ref={tenant.referral_code || 'TBD'}
+                app.tu-dominio.com/join?ambassador={tenant.referral_code || 'TBD'}
               </div>
               <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-white">
                 <Copy className="w-4 h-4" />
@@ -88,19 +88,19 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
           </div>
           
           <div className="bg-black/40 rounded-2xl p-6 border border-white/5 text-center">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold mb-4">Progreso de Referidos</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold mb-4">Progreso de Embajador</p>
             <div className="flex justify-center items-end gap-2 mb-4">
               <span className="text-5xl font-serif text-white">{referrals}</span>
-              <span className="text-xl text-white/30 mb-1">/ {referralGoal}</span>
+              <span className="text-xl text-white/30 mb-1">/ {referralGoal} Negocios</span>
             </div>
             <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-4">
               <div 
-                className="h-full bg-gold-primary rounded-full transition-all duration-1000"
+                className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
                 style={{ width: `${referralPercentage}%` }}
               />
             </div>
             <p className="text-[10px] text-white/50 uppercase tracking-wider">
-              {referrals >= referralGoal ? '¡Recompensa Desbloqueada!' : `Faltan ${referralGoal - referrals} amigos`}
+              {referrals >= referralGoal ? '¡$50 USD Listos para Cobrar!' : `Faltan ${referralGoal - referrals} negocios`}
             </p>
           </div>
         </div>
