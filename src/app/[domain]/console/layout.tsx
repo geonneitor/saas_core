@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { Settings, Calendar, BrainCircuit, Activity, ChevronLeft } from 'lucide-react';
 
-export default function PartnerConsoleLayout({ children, params }: { children: ReactNode, params: { domain: string } }) {
+export default async function PartnerConsoleLayout({ children, params }: { children: ReactNode, params: Promise<{ domain: string }> }) {
+  const resolvedParams = await params;
   return (
     <div className="min-h-screen bg-[#0B0F19] text-white flex flex-col md:flex-row selection:bg-gold-primary/30 selection:text-gold-light relative overflow-hidden">
       {/* Noise Texture & Glow */}
