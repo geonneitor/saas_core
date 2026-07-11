@@ -27,11 +27,15 @@ export async function POST(req: Request) {
     let dynamicContext = "";
     let basePrompt = isAdmin ? "Eres un asistente administrativo." : "Eres un asistente virtual para clientes.";
     let settings: any = null;
+    let tenantData: any = null;
 
     if (tenantId) {
       // 1. Obtener settings del negocio
-      const { data: settings } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
-      const { data: tenantData } = await supabase.from('tenants').select('setup_fee_paid, ai_token_limit, ai_tokens_used').eq('id', tenantId).single();
+      const { data: fetchedSettings } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
+      settings = fetchedSettings;
+      
+      const { data: fetchedTenantData } = await supabase.from('tenants').select('setup_fee_paid, ai_token_limit, ai_tokens_used').eq('id', tenantId).single();
+      tenantData = fetchedTenantData;
       
       // Validar periodo de prueba y pago de adquisición
       const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at) : new Date(9999, 11, 31);
