@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     if (tenantId) {
       // 1. Obtener settings del negocio
       const { data: settings } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
-      const { data: tenantData } = await supabase.from('tenants').select('setup_fee_paid').eq('id', tenantId).single();
+      const { data: tenantData } = await supabase.from('tenants').select('setup_fee_paid, ai_token_limit, ai_tokens_used').eq('id', tenantId).single();
       
       // Validar periodo de prueba y pago de adquisición
       const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at) : new Date(9999, 11, 31);
@@ -47,8 +47,8 @@ export async function POST(req: Request) {
       }
 
       // Validar tokens de IA
-      const limit = settings?.ai_tokens_limit || 0;
-      const used = settings?.ai_tokens_used || 0;
+      const limit = tenantData?.ai_token_limit || 0;
+      const used = tenantData?.ai_tokens_used || 0;
       const remaining = Math.max(0, limit - used);
       
       if (remaining <= 0) {
@@ -222,8 +222,8 @@ PROHIBICIONES:
     }
 
     if (tenantId) {
-      const used = settings?.ai_tokens_used || 0;
-      supabase.from('business_settings').update({ ai_tokens_used: used + 1 }).eq('tenant_id', tenantId).then(({error}) => {
+      const used = tenantData?.ai_tokens_used || 0;
+      supabase.from('tenants').update({ ai_tokens_used: used + 1 }).eq('id', tenantId).then(({error}) => {
         if (error) console.error('[API /assistant] Error incrementing tokens:', error);
       });
     }

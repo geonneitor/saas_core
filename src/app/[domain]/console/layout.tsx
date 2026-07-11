@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { Settings, Calendar, BrainCircuit, Activity, ChevronLeft } from 'lucide-react';
+import { Settings, Calendar, BrainCircuit, Activity, ChevronLeft, ShoppingBag } from 'lucide-react';
 
 export default async function PartnerConsoleLayout({ children, params }: { children: ReactNode, params: Promise<{ domain: string }> }) {
   const resolvedParams = await params;
@@ -29,6 +29,10 @@ export default async function PartnerConsoleLayout({ children, params }: { child
           <Link href="/console/calendar" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white">
             <Calendar className="w-4 h-4" /> Calendario
           </Link>
+          <Link href="/console/store" className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white group">
+            <span className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /> Marketplace</span>
+            <span className="text-[9px] bg-gold-primary/20 text-gold-light px-2 py-0.5 rounded-full uppercase tracking-widest font-bold group-hover:bg-gold-primary group-hover:text-black transition-colors">Nuevo</span>
+          </Link
         </nav>
 
         <div className="mt-auto pt-6 border-t border-white/10">
