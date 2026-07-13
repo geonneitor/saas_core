@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -17,10 +16,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const params = await props.params;
   const domain = params.domain;
-  // Use admin client to bypass RLS for public tenant data (e.g. settings/brand)
-  const supabaseAdmin = createAdminClient();
+  // Use authenticated/anon client to respect RLS
+  const supabase = await createClient();
 
-  const { data: tenant, error } = await supabaseAdmin
+  const { data: tenant, error } = await supabase
     .from('tenants')
     .select('name, business_settings(*)')
     .eq('subdomain', domain)
@@ -47,10 +46,9 @@ export default async function TenantLandingPage(props: {
   const params = await props.params;
   const domain = params.domain;
   const supabase = await createClient();
-  const supabaseAdmin = createAdminClient();
 
-  // 1. Validar Inquilino (Admin Client para lectura pública)
-  const { data: tenant, error } = await supabaseAdmin
+  // 1. Validar Inquilino (Anon/Auth Client para lectura pública con RLS)
+  const { data: tenant, error } = await supabase
     .from('tenants')
     .select('*, business_settings(*)')
     .eq('subdomain', domain)
@@ -184,7 +182,7 @@ export default async function TenantLandingPage(props: {
               © {new Date().getFullYear()} {tenant.name}.
             </p>
             <a 
-              href={process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000' : 'https://app.tu-dominio.com'} 
+              href={process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000' : `https://app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`} 
               target="_blank"
               rel="noopener noreferrer"
               className="text-[10px] font-bold uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors opacity-70 hover:opacity-100 flex items-center gap-2"

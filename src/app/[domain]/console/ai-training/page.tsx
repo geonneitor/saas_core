@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { BrainCircuit, MessageSquareText, ShieldAlert, Sparkles, Plus } from 'lucide-react';
 import { ToneSelector } from '@/components/tenant-ui/console/ToneSelector';
 import { ServicesManager } from '@/components/tenant-ui/console/ServicesManager';
@@ -7,7 +6,7 @@ import { BusinessRulesManager } from '@/components/tenant-ui/console/BusinessRul
 
 export default async function AITrainingPage(props: { params: Promise<{ domain: string }> }) {
   const params = await props.params;
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   
   // Fetch tenant info
   const { data: tenant } = await supabase

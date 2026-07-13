@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { ShoppingBag, MessageSquare, LineChart, CreditCard, Zap, Share2, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -37,7 +37,7 @@ const MODULES = [
 
 export default async function PartnerStorePage(props: { params: Promise<{ domain: string }> }) {
   const params = await props.params;
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   
   const { data: tenant } = await supabase
     .from('tenants')
@@ -86,7 +86,7 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
             
             <div className="bg-black/50 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
               <div className="font-mono text-sm text-gold-primary break-all">
-                app.tu-dominio.com/join?ambassador={tenant.referral_code || 'TBD'}
+                app.{process.env.NEXT_PUBLIC_ROOT_DOMAIN}/join?ambassador={tenant.referral_code || 'TBD'}
               </div>
               <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-white">
                 <Copy className="w-4 h-4" />

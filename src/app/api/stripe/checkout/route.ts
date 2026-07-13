@@ -21,10 +21,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { moduleId, tenantId, title, price } = await req.json();
+    const { moduleId, tenantId, title } = await req.json();
 
-    if (!moduleId || !tenantId || !price || price <= 0) {
-      return NextResponse.json({ error: 'Datos incompletos o precio inválido' }, { status: 400 });
+    if (!moduleId || !tenantId) {
+      return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
+    }
+
+    // Catálogo de precios por defecto (evita inyección de precios)
+    const MODULE_PRICES: Record<string, number> = {
+      'tokens_10k': 10,
+      'tokens_50k': 45,
+      'tokens_200k': 150,
+      'core': 0, // No debería comprarse
+    };
+    
+    // Si no está en el mapa, asume módulo premium genérico
+    const price = MODULE_PRICES[moduleId] !== undefined ? MODULE_PRICES[moduleId] : 149;
+
+    if (price <= 0) {
+      return NextResponse.json({ error: 'Módulo no válido para compra' }, { status: 400 });
     }
 
     // Validar ownership: el usuario autenticado DEBE ser dueño del tenant

@@ -238,8 +238,7 @@ PROHIBICIONES:
     }
 
     if (tenantId) {
-      const used = tenantData?.ai_tokens_used || 0;
-      adminSupabase.from('tenants').update({ ai_tokens_used: used + 1 }).eq('id', tenantId).then(({error}) => {
+      adminSupabase.rpc('increment_tokens_used', { p_tenant_id: tenantId, p_amount: 1 }).then(({error}) => {
         if (error) console.error('[API /assistant] Error incrementing tokens:', error);
       });
     }

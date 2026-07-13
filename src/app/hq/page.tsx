@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { GlobalMetricsCards } from "./components/GlobalMetricsCards"
 import { TenantsDirectoryTable } from "./components/TenantsDirectoryTable"
@@ -5,6 +6,16 @@ import { TenantsDirectoryTable } from "./components/TenantsDirectoryTable"
 export const dynamic = "force-dynamic";
 
 export default async function SuperAdminPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return <div className="text-red-500 p-8">Acceso denegado. Por favor inicia sesión.</div>;
+  
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (profile?.role !== 'super_admin' && process.env.NODE_ENV !== 'development') {
+    return <div className="text-red-500 p-8">No autorizado. Nivel de acceso insuficiente.</div>;
+  }
+
   const supabaseAdmin = createAdminClient();
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 

@@ -16,7 +16,7 @@ export default async function PartnerDashboardPage(props: {
 
   if (!user && !isDemo) {
     // Redirigir al login del sistema principal (app.localhost)
-    redirect(process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000/login' : 'https://app.tu-dominio.com/login');
+    redirect(process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000/login' : `https://app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}/login`);
   }
 
   const { data: tenant } = await supabase

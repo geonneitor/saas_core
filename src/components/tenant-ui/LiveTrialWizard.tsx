@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { updateVisualSettings, updateAiSettings } from '@/app/[domain]/actions';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -34,7 +34,7 @@ const AVATARS = [
   { id: 'star', name: 'Premium' }
 ];
 
-export function LiveTrialWizard({ 
+function LiveTrialWizardContent({ 
   tenantId, 
   currentSettings 
 }: { 
@@ -222,5 +222,16 @@ export function LiveTrialWizard({
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export function LiveTrialWizard(props: { 
+  tenantId: string,
+  currentSettings: { theme?: string, font?: string, hero_image?: string, brand_tagline?: string, ai_avatar?: string }
+}) {
+  return (
+    <Suspense fallback={null}>
+      <LiveTrialWizardContent {...props} />
+    </Suspense>
   );
 }
