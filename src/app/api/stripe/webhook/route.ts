@@ -2,11 +2,6 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia' as any,
-});
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 /**
  * POST /api/stripe/webhook
@@ -15,6 +10,11 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
  * Uses service_role (admin) client since webhooks are server-to-server.
  */
 export async function POST(req: Request) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2024-12-18.acacia' as any,
+  });
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
   const body = await req.text();
   const signature = req.headers.get('stripe-signature') as string;
 
