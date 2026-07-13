@@ -19,7 +19,10 @@ export function DeleteTenantForm({
       }}
     >
       <input type="hidden" name="id" value={tenantId} />
-      <button type="submit" className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-md text-xs font-semibold border border-red-200 transition-colors">
+      <button 
+        type="submit" 
+        className="px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg text-xs font-semibold border border-rose-500/20 transition-all cursor-pointer"
+      >
         Eliminar
       </button>
     </form>

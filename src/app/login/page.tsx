@@ -13,12 +13,9 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      const isConsoleApp = window.location.hostname.startsWith('app.');
-      const isHqApp = window.location.hostname.startsWith('hq.');
-      let nextPath = '/console'; // Default to Command Center
-      
-      if (isConsoleApp) nextPath = '/console';
-      if (isHqApp) nextPath = '/hq';
+      const isHqApp = window.location.hostname.startsWith('hq.') || window.location.hostname.startsWith('app.');
+      let nextPath = '/hq'; // Consolidated under hq dashboard
+
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MessageCircle } from "lucide-react"
 import MapModal from "../MapModal"
+import { UpdateTokenLimitForm } from "./UpdateTokenLimitForm"
+import { DeleteTenantForm } from "./DeleteTenantForm"
+import { deleteTenant } from "../actions"
 
 interface TenantsDirectoryTableProps {
   tenants: any[];
@@ -33,8 +36,8 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
           <TableBody>
             {tenants?.map((tenant) => {
               const settings = tenant.business_settings?.[0];
-              const usagePercent = settings && settings.ai_tokens_limit 
-                ? Math.round((settings.ai_tokens_used / settings.ai_tokens_limit) * 100) 
+              const usagePercent = tenant.ai_token_limit 
+                ? Math.round((tenant.ai_tokens_used / tenant.ai_token_limit) * 100) 
                 : 0;
               
               return (
@@ -51,7 +54,7 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <div className="w-full bg-neutral-800 rounded-full h-2 max-w-[100px]">
                         <div 
                           className={`h-2 rounded-full ${usagePercent > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`} 
@@ -60,9 +63,10 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                       </div>
                       <span className="text-xs text-neutral-400">{usagePercent}%</span>
                     </div>
-                    <div className="text-[10px] text-neutral-500 mt-1">
-                      {settings?.ai_tokens_used || 0} / {settings?.ai_tokens_limit || 0}
+                    <div className="text-[10px] text-neutral-500 mt-1 mb-2">
+                      {tenant.ai_tokens_used || 0} / {tenant.ai_token_limit || 0}
                     </div>
+                    <UpdateTokenLimitForm tenantId={tenant.id} currentLimit={tenant.ai_token_limit || 0} />
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -83,9 +87,9 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" className="border-neutral-700 bg-transparent hover:bg-neutral-800 text-white">
-                      Administrar
-                    </Button>
+                    <div className="flex items-center justify-end gap-3">
+                      <DeleteTenantForm tenantId={tenant.id} tenantName={tenant.name} action={deleteTenant} />
+                    </div>
                   </TableCell>
                 </TableRow>
               )
@@ -104,3 +108,4 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
     </Card>
   )
 }
+

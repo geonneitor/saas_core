@@ -14,20 +14,15 @@ export default async function ConsoleBillingPage(props: {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, name, subdomain, is_active, setup_fee_paid, setup_advance_paid, trial_ends_at, stripe_customer_id, created_at')
+    .select('id, name, subdomain, is_active, setup_fee_paid, setup_advance_paid, trial_ends_at, stripe_customer_id, created_at, ai_token_limit, ai_tokens_used')
     .eq('subdomain', domain)
     .single();
 
   if (!tenant || !tenant.is_active) notFound();
 
-  const { data: settings } = await supabase
-    .from('business_settings')
-    .select('ai_tokens_used, ai_tokens_limit')
-    .eq('tenant_id', tenant.id)
-    .maybeSingle();
+  const tokensUsed = tenant.ai_tokens_used ?? 0;
+  const tokensLimit = tenant.ai_token_limit ?? 1000;
 
-  const tokensUsed = settings?.ai_tokens_used ?? 0;
-  const tokensLimit = settings?.ai_tokens_limit ?? 500;
 
   const showSuccess = Boolean(searchParams.session_id || searchParams.success);
   

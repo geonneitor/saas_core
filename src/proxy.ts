@@ -44,17 +44,7 @@ export default async function proxy(req: NextRequest) {
     console.log(`[PROXY] Rewriting SUPER ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } 
-  // 2. REESCRITURA PARA EL TENANT ADMIN PANEL (app.geo-dev.online)
-  else if (hostname === `app.${rootDomain}`) {
-    isAdminApp = true;
-    let finalPath = path;
-    if (!path.startsWith('/login') && !path.startsWith('/auth')) {
-      finalPath = path === '/' ? '/console' : `/console${path}`;
-    }
-    console.log(`[PROXY] Rewriting TENANT ADMIN request for ${hostname}${path} -> ${finalPath}`);
-    response = NextResponse.rewrite(new URL(finalPath, req.url));
-  }
-  // 3. REESCRITURA PARA LA LANDING PAGE PRINCIPAL
+  // 2. REESCRITURA PARA LA LANDING PAGE PRINCIPAL
   else if (
     hostname === rootDomain || 
     hostname === `www.${rootDomain}` ||
@@ -65,7 +55,7 @@ export default async function proxy(req: NextRequest) {
     console.log(`[PROXY] Rewriting MAIN LANDING request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));
   } 
-  // 4. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
+  // 3. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
   else {
     // Extraemos el subdominio limpio. Ej: salondeunas.geo-dev.online -> salondeunas
     const cleanSubdomain = hostname
@@ -88,7 +78,7 @@ export default async function proxy(req: NextRequest) {
     response = NextResponse.rewrite(urlWithParams);
   }
 
-  // 5. ACTUALIZAR SESIÓN DE SUPABASE
+  // 4. ACTUALIZAR SESIÓN DE SUPABASE
   // Esto refresca el token de auth si expiró, pasándole el request y el response de reescritura.
-  return await updateSession(req, response, { isAdminApp, isSuperAdminApp });
+  return await updateSession(req, response, { isSuperAdminApp });
 }

@@ -10,20 +10,24 @@ export async function createTenant(formData: FormData) {
   const rawSubdomain = formData.get('subdomain') as string;
   const subdomain = rawSubdomain.split('.')[0].toLowerCase().replace(/[^a-z0-9-]/g, '');
   
-  const { data: tenant, error } = await supabase.from('tenants').insert({ name, subdomain, is_active: true }).select().single();
+  // Set initial token limit of 1000 directly on tenants table
+  const { data: tenant, error } = await supabase
+    .from('tenants')
+    .insert({ name, subdomain, is_active: true, ai_token_limit: 1000 })
+    .select()
+    .single();
   
   if (tenant && !error) {
     await supabase.from('business_settings').insert({
       tenant_id: tenant.id,
       ai_prompt: `Eres el asistente virtual experto de ${name}. Eres sumamente educado, amable y resolutivo. Tu único objetivo es agendar citas.`,
       opening_time: '09:00:00',
-      closing_time: '20:00:00',
-      ai_token_limit: 1000 // Inicializar con 1000 tokens para la prueba de 7 días
+      closing_time: '20:00:00'
     });
   }
 
   if (error) console.error("Error creating tenant:", error);
-  revalidatePath('/console');
+  revalidatePath('/hq');
 }
 
 export async function deleteTenant(formData: FormData) {
@@ -39,8 +43,7 @@ export async function deleteTenant(formData: FormData) {
   const adminSupabase = createAdminClient();
   await adminSupabase.from('tenants').delete().eq('id', id);
   
-  revalidatePath('/console');
-  revalidatePath('/console');
+  revalidatePath('/hq');
   revalidatePath('/', 'layout');
 }
 
@@ -59,5 +62,5 @@ export async function updateTokenLimit(formData: FormData) {
   const adminSupabase = createAdminClient();
   await adminSupabase.from('tenants').update({ ai_token_limit: limit }).eq('id', id);
   
-  revalidatePath('/console');
+  revalidatePath('/hq');
 }
