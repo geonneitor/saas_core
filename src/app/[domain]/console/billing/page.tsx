@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { CreditCard, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import WalletDashboard from '@/components/admin/WalletDashboard';
-import StripeCheckoutButton from '../../admin/billing/StripeCheckoutButton';
+import StripeCheckoutButton from '@/components/admin/StripeCheckoutButton';
 
 export default async function ConsoleBillingPage(props: {
   params: Promise<{ domain: string }>;

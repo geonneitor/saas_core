@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Wallet, Sparkles, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import StripeCheckoutButton from '@/app/[domain]/admin/billing/StripeCheckoutButton';
+import StripeCheckoutButton from '@/components/admin/StripeCheckoutButton';
 
 interface WalletDashboardProps {
   tokensUsed: number;
