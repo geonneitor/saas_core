@@ -1,8 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const supabase = createAdminClient();
-
 export async function checkAvailability(tenantId: string, date: string) {
+  const supabase = createAdminClient();
   try {
     // Buscar configuración del negocio para horarios
     const { data: settings } = await supabase
@@ -37,20 +36,36 @@ export async function bookAppointment(
   tenantId: string,
   customerName: string,
   customerEmail: string | undefined,
+  customerPhone: string | undefined,
   date: string,
   time: string,
   notes: string = ''
 ) {
+  const supabase = createAdminClient();
   try {
     let customerId = null;
 
     if (customerEmail) {
-      // Intentar encontrar al cliente
+      // Intentar encontrar al cliente por email
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('id')
         .eq('tenant_id', tenantId)
         .eq('email', customerEmail)
+        .single();
+
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+      }
+    }
+
+    if (!customerId && customerPhone) {
+      // Intentar encontrar al cliente por teléfono
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('phone', customerPhone)
         .single();
 
       if (existingCustomer) {
@@ -66,7 +81,7 @@ export async function bookAppointment(
           tenant_id: tenantId,
           name: customerName,
           email: customerEmail || `${Date.now()}@temp.com`,
-          phone: null
+          phone: customerPhone || null
         })
         .select('id')
         .single();
@@ -109,8 +124,41 @@ export async function bookAppointment(
   }
 }
 
-export async function cancelAppointment(tenantId: string, appointmentId: string) {
+export async function cancelAppointment(
+  tenantId: string,
+  appointmentId: string,
+  customerEmailOrPhone?: string,
+  isAdmin = false
+) {
+  const supabase = createAdminClient();
   try {
+    if (!isAdmin) {
+      if (!customerEmailOrPhone) {
+        return { success: false, error: 'Se requiere el correo electrónico o número de teléfono del cliente para verificar y cancelar la cita.' };
+      }
+
+      // Obtener la cita y los datos del cliente
+      const { data: appointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('id, customers(email, phone)')
+        .eq('id', appointmentId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError || !appointment) {
+        return { success: false, error: 'Cita no encontrada.' };
+      }
+
+      const customer = Array.isArray(appointment.customers) ? appointment.customers[0] : appointment.customers;
+      
+      const emailMatch = customer?.email && customer.email.trim().toLowerCase() === customerEmailOrPhone.trim().toLowerCase();
+      const phoneMatch = customer?.phone && customer.phone.replace(/\D/g, '') === customerEmailOrPhone.replace(/\D/g, '');
+
+      if (!emailMatch && !phoneMatch) {
+        return { success: false, error: 'La validación de identidad falló. El correo o teléfono proporcionado no coincide con el registro de la cita.' };
+      }
+    }
+
     const { error } = await supabase
       .from('appointments')
       .update({ status: 'cancelled' })
@@ -125,8 +173,43 @@ export async function cancelAppointment(tenantId: string, appointmentId: string)
   }
 }
 
-export async function rescheduleAppointment(tenantId: string, appointmentId: string, newDate: string, newTime: string) {
+export async function rescheduleAppointment(
+  tenantId: string,
+  appointmentId: string,
+  newDate: string,
+  newTime: string,
+  customerEmailOrPhone?: string,
+  isAdmin = false
+) {
+  const supabase = createAdminClient();
   try {
+    if (!isAdmin) {
+      if (!customerEmailOrPhone) {
+        return { success: false, error: 'Se requiere el correo electrónico o número de teléfono del cliente para verificar y reagendar la cita.' };
+      }
+
+      // Obtener la cita y los datos del cliente
+      const { data: appointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('id, customers(email, phone)')
+        .eq('id', appointmentId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError || !appointment) {
+        return { success: false, error: 'Cita no encontrada.' };
+      }
+
+      const customer = Array.isArray(appointment.customers) ? appointment.customers[0] : appointment.customers;
+      
+      const emailMatch = customer?.email && customer.email.trim().toLowerCase() === customerEmailOrPhone.trim().toLowerCase();
+      const phoneMatch = customer?.phone && customer.phone.replace(/\D/g, '') === customerEmailOrPhone.replace(/\D/g, '');
+
+      if (!emailMatch && !phoneMatch) {
+        return { success: false, error: 'La validación de identidad falló. El correo o teléfono proporcionado no coincide con el registro de la cita.' };
+      }
+    }
+
     const startTimeStr = `${newDate}T${newTime}:00`;
     const startDate = new Date(startTimeStr);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora
@@ -156,6 +239,7 @@ export async function rescheduleAppointment(tenantId: string, appointmentId: str
 }
 
 export async function getBusinessStats(tenantId: string) {
+  const supabase = createAdminClient();
   try {
     const { count: customerCount } = await supabase
       .from('customers')

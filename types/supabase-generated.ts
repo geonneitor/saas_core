@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -70,9 +70,9 @@ export type Database = {
           ai_avatar: string | null
           ai_prompt: string | null
           ai_rules: string | null
-          ai_tokens_limit: number | null
           ai_tokens_used: number | null
           ai_tone: string | null
+          brand_tagline: string | null
           closing_time: string
           created_at: string
           font: string | null
@@ -96,9 +96,9 @@ export type Database = {
           ai_avatar?: string | null
           ai_prompt?: string | null
           ai_rules?: string | null
-          ai_tokens_limit?: number | null
           ai_tokens_used?: number | null
           ai_tone?: string | null
+          brand_tagline?: string | null
           closing_time?: string
           created_at?: string
           font?: string | null
@@ -122,9 +122,9 @@ export type Database = {
           ai_avatar?: string | null
           ai_prompt?: string | null
           ai_rules?: string | null
-          ai_tokens_limit?: number | null
           ai_tokens_used?: number | null
           ai_tone?: string | null
+          brand_tagline?: string | null
           closing_time?: string
           created_at?: string
           font?: string | null
@@ -207,6 +207,24 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_events: {
+        Row: {
+          created_at: string | null
+          id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           active_modules: Json | null
@@ -214,7 +232,6 @@ export type Database = {
           ai_tokens_used: number | null
           available_rewards: Json | null
           created_at: string
-          extra_modules: Json | null
           id: string
           is_active: boolean | null
           last_active: string | null
@@ -238,7 +255,6 @@ export type Database = {
           ai_tokens_used?: number | null
           available_rewards?: Json | null
           created_at?: string
-          extra_modules?: Json | null
           id?: string
           is_active?: boolean | null
           last_active?: string | null
@@ -262,7 +278,6 @@ export type Database = {
           ai_tokens_used?: number | null
           available_rewards?: Json | null
           created_at?: string
-          extra_modules?: Json | null
           id?: string
           is_active?: boolean | null
           last_active?: string | null
@@ -339,7 +354,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      handle_stripe_token_purchase: {
+        Args: {
+          p_amount: number
+          p_event_id: string
+          p_event_type: string
+          p_tenant_id: string
+        }
+        Returns: boolean
+      }
+      increment_tokens_used: {
+        Args: { p_amount?: number; p_tenant_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

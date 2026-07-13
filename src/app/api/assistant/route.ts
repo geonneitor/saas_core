@@ -163,25 +163,31 @@ PROHIBICIONES:
     });
 
     tools.book_appointment = tool({
-      description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente.",
+      description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente. Es altamente recomendado solicitar y proporcionar el número de teléfono para confirmaciones.",
       parameters: z.object({ 
         customerName: z.string().describe("Nombre completo del cliente"), 
         customerEmail: z.string().optional().describe("Email del cliente (opcional)"),
+        customerPhone: z.string().optional().describe("Número de teléfono del cliente (opcional, recomendado)"),
         date: z.string().describe("YYYY-MM-DD"),
         time: z.string().describe("HH:MM"),
         notes: z.string().optional()
       }),
       // @ts-ignore
-      execute: async ({ customerName, customerEmail, date, time, notes }) => {
-        return await bookAppointment(tenantId, customerName, customerEmail, date, time, notes);
+      execute: async ({ customerName, customerEmail, customerPhone, date, time, notes }) => {
+        return await bookAppointment(tenantId, customerName, customerEmail, customerPhone, date, time, notes);
       }
     });
 
     tools.cancel_appointment = tool({
-      description: "Cancela una cita dado su ID.",
-      parameters: z.object({ appointmentId: z.string().describe("El ID de la cita a cancelar") }),
+      description: "Cancela una cita dado su ID. Requiere el correo electrónico o número de teléfono del cliente para verificación.",
+      parameters: z.object({ 
+        appointmentId: z.string().describe("El ID de la cita a cancelar"),
+        customerEmailOrPhone: z.string().describe("El correo electrónico o número de teléfono del cliente registrado en la cita")
+      }),
       // @ts-ignore
-      execute: async ({ appointmentId }) => await cancelAppointment(tenantId, appointmentId)
+      execute: async ({ appointmentId, customerEmailOrPhone }) => {
+        return await cancelAppointment(tenantId, appointmentId, customerEmailOrPhone, isAdmin);
+      }
     });
 
     if (isAdmin) {
@@ -193,7 +199,9 @@ PROHIBICIONES:
           newTime: z.string().describe("HH:MM")
         }),
         // @ts-ignore
-        execute: async ({ appointmentId, newDate, newTime }) => await rescheduleAppointment(tenantId, appointmentId, newDate, newTime)
+        execute: async ({ appointmentId, newDate, newTime }) => {
+          return await rescheduleAppointment(tenantId, appointmentId, newDate, newTime, undefined, true);
+        }
       });
 
       tools.get_business_stats = tool({

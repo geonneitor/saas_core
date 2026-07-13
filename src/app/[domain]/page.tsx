@@ -21,7 +21,7 @@ export async function generateMetadata(
 
   const { data: tenant, error } = await supabase
     .from('tenants')
-    .select('name, business_settings(*)')
+    .select('name, business_settings(id, tenant_id, theme, font, hero_image, brand_tagline, ai_avatar, system_status, whatsapp_number, opening_time, closing_time, services_json)')
     .eq('subdomain', domain)
     .single();
 
@@ -50,7 +50,7 @@ export default async function TenantLandingPage(props: {
   // 1. Validar Inquilino (Anon/Auth Client para lectura pública con RLS)
   const { data: tenant, error } = await supabase
     .from('tenants')
-    .select('*, business_settings(*)')
+    .select('id, name, subdomain, is_active, owner_id, business_settings(id, tenant_id, theme, font, hero_image, brand_tagline, ai_avatar, system_status, whatsapp_number, opening_time, closing_time, services_json)')
     .eq('subdomain', domain)
     .single();
 

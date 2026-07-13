@@ -55,8 +55,13 @@ export async function updateSession(
       return NextResponse.redirect(loginUrl)
     }
 
+    const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || 'cesargeo56@gmail.com')
+      .split(',')
+      .map(email => email.trim().toLowerCase());
+    const isSuperAdmin = !!(user?.email && superAdminEmails.includes(user.email.toLowerCase()));
+
     // Si hay user, validar que sea el email autorizado
-    if (user && user.email !== 'cesargeo56@gmail.com') {
+    if (user && !isSuperAdmin) {
       // Intento de acceso no autorizado, patearlo.
       const unauthorizedUrl = request.nextUrl.clone()
       unauthorizedUrl.pathname = '/login' // podriamos mandarlo a un /unauthorized
@@ -67,7 +72,7 @@ export async function updateSession(
     }
 
     // Si ya está logueado y es superadmin, no dejarlo ir al /login del superadmin
-    if (user && isAuthRoute && user.email === 'cesargeo56@gmail.com') {
+    if (user && isAuthRoute && isSuperAdmin) {
       const superAdminUrl = request.nextUrl.clone()
       superAdminUrl.pathname = '/'
       return NextResponse.redirect(superAdminUrl)
