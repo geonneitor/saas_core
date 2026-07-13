@@ -1,7 +1,7 @@
 # 🏗️ Biblia del Proyecto — Arquitectura y Contexto Global (SaaS Core)
 
 > **Última actualización:** 2026-07-13
-> **Estado:** Sprints 0, 1 y 2 Completados al 100%. Estructura de super-admin consolidada en `/hq`.
+> **Estado:** Sprints 0, 1, 2, 3.1 y 3.2 Completados. Sprint 3.3 (tipos estrictos) y deuda de Sprint 2 pendientes.
 
 ---
 
@@ -44,18 +44,27 @@
 
 ## 📅 Roadmap y Estado de Sprints
 
-### ✅ Sprints 0, 1 y 2 (Completados)
+### ✅ Sprints 0, 1, 2 y 3.1-3.2 (Completados parcialmente)
 *   **Sprint 0 (Seguridad & RLS):** Blindaje de políticas SELECT públicas de `tenants` y `business_settings`. Rotación de llaves Stripe, eliminación de Server Actions públicas vulnerables y aseguramiento de `/api/assistant`.
 *   **Sprint 1 (Stripe & Idempotencia):** Bloqueo de inyecciones de precios en Stripe Checkout calculando montos en el servidor. Implementación de idempotencia en webhooks mediante tabla `stripe_events`.
 *   **Sprint 2 (Consolidación de Arquitectura):** Remoción de las rutas `/admin` legacy de inquilinos y unificación de la consola de aprovisionamiento `/console` raíz dentro de `/hq` de super-admin. Reacomodo de scripts SQL en la carpeta `supabase/`.
+*   **Sprint 3.1 — Rate Limiting:** Implementado in-memory token bucket en `/api/assistant` (15 req/min) y `/api/stripe/checkout` (5 req/min). Edge-compatible, migrable a Upstash Redis. Commit `a1e1540`.
+*   **Sprint 3.2 — Caching & Revalidación:** `unstable_cache` con `revalidate: 60` y tag `'tenants'` en `src/app/[domain]/page.tsx` (landing pública del tenant). `export const revalidate = 60` en `src/app/[domain]/console/page.tsx` (dashboard del dueño). Commit `3949991`.
 
-### 🟡 Sprint 3: Optimización y Tipos (Pendiente)
-*   **Caching & Revalidación:** Inyectar estrategias de revalidación en las landings dinámicas de los tenants.
-*   **Tipado Estricto:** Eliminar el uso de `: any` o `as any` en los endpoints y vistas reemplazándolos con tipos autogenerados de Supabase.
-*   **Rate Limiting:** Implementar limitación de peticiones por IP en `/api/assistant` y endpoints de Stripe Checkout para mitigar ataques de denegación de servicio.
+### 🟡 Sprint 3.3: Tipos Estrictos (Pendiente)
+*   Eliminar el uso de `: any` o `as any` en los endpoints y vistas (14 en `assistant/route.ts`, 4 en `tools.ts`, 1 en `[domain]/page.tsx`, 1 en `useBookingStore.ts`).
+*   Quitar `@ts-ignore` (7) y `@ts-expect-error` (2) usando tipos correctos.
+*   Limpiar `console.log` en producción (17) envolviéndolos en `if (NODE_ENV !== 'production')`.
+*   Quitar `isAdmin` del body del cliente en `AiAssistantChat.tsx:128`.
 
 ### 🔵 Sprint 4: Automatización (Pendiente)
 *   **WhatsApp API:** Integración con la API de WhatsApp de Meta para que la IA responda y gestione las reservas de los tenants por mensajería directa en tiempo real.
+
+### 🟡 Deuda Técnica de Sprint 2 (Pendiente)
+*   `app.tu-dominio.com` hardcodeado en 6 lugares → helper `getAppUrl()` desde `NEXT_PUBLIC_ROOT_DOMAIN`.
+*   `proxy.ts` sin allowlist de hostname → regex `^(?:[a-z0-9-]+\.)?(localhost|geo-dev\.online|vercel\.app)$`.
+*   Cookie domain hardcodeado en `lib/supabase/server.ts:23-25`.
+*   `useBookingStore` modal pendiente de implementar.
 
 ---
 
