@@ -55,10 +55,8 @@ export async function updateSession(
       return NextResponse.redirect(loginUrl)
     }
 
-    const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || 'cesargeo56@gmail.com')
-      .split(',')
-      .map(email => email.trim().toLowerCase());
-    const isSuperAdmin = !!(user?.email && superAdminEmails.includes(user.email.toLowerCase()));
+    const { isSuperAdmin: checkIsSuperAdmin } = await import('@/lib/auth/super-admin');
+    const isSuperAdmin = await checkIsSuperAdmin(supabase, user?.id || null);
 
     // Si hay user, validar que sea el email autorizado
     if (user && !isSuperAdmin) {

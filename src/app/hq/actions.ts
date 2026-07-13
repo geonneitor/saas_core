@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireSuperAdmin } from '@/lib/auth/super-admin';
 import { revalidatePath } from 'next/cache';
 
 export async function createTenant(formData: FormData) {
@@ -32,16 +33,16 @@ export async function createTenant(formData: FormData) {
 
 export async function deleteTenant(formData: FormData) {
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'super_admin') return;
+  try {
+    await requireSuperAdmin(supabase);
+  } catch (e) {
+    console.error('[deleteTenant] Auth failed:', e);
+    return;
+  }
 
   const id = formData.get('id') as string;
   const adminSupabase = createAdminClient();
-  await adminSupabase.from('tenants').delete().eq('id', id);
+  await adminSupabase.rpc('suspend_tenant', { p_tenant_id: id });
   
   revalidatePath('/hq');
   revalidatePath('/', 'layout');
@@ -49,18 +50,18 @@ export async function deleteTenant(formData: FormData) {
 
 export async function updateTokenLimit(formData: FormData) {
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'super_admin') return;
+  try {
+    await requireSuperAdmin(supabase);
+  } catch (e) {
+    console.error('[updateTokenLimit] Auth failed:', e);
+    return;
+  }
 
   const id = formData.get('id') as string;
   const limit = parseInt(formData.get('limit') as string, 10);
   
   const adminSupabase = createAdminClient();
-  await adminSupabase.from('tenants').update({ ai_token_limit: limit }).eq('id', id);
+  await adminSupabase.rpc('update_tenant_token_limit', { p_tenant_id: id, p_new_limit: limit });
   
   revalidatePath('/hq');
 }

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { isSuperAdmin } from '@/lib/auth/super-admin';
 import { GlobalMetricsCards } from "./components/GlobalMetricsCards"
 import { TenantsDirectoryTable } from "./components/TenantsDirectoryTable"
 import { CreateTenantForm } from "./components/CreateTenantForm"
@@ -12,8 +13,7 @@ export default async function SuperAdminPage() {
   
   if (!user) return <div className="text-red-500 p-8">Acceso denegado. Por favor inicia sesión.</div>;
   
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'super_admin' && process.env.NODE_ENV !== 'development') {
+  if (!(await isSuperAdmin(supabase, user.id)) && process.env.NODE_ENV !== 'development') {
     return <div className="text-red-500 p-8">No autorizado. Nivel de acceso insuficiente.</div>;
   }
 
