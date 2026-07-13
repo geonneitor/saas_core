@@ -1,18 +1,37 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function PublicNavbar() {
+  const pathname = usePathname();
+  const isRoot = pathname === '/';
+
   return (
     <header className="relative z-20 px-8 py-6 flex justify-between items-center border-b border-white/10 backdrop-blur-md">
-      <div className="text-2xl font-black tracking-tighter uppercase text-white flex items-center gap-2">
+      <Link href="/" className="text-2xl font-black tracking-tighter uppercase text-white flex items-center gap-2">
         GEO<span className="text-[#ff0055]">DEV</span>
         <div className="w-2 h-2 bg-[#ff0055] animate-pulse rounded-none"></div>
-      </div>
+      </Link>
       <nav className="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-        <span className="hover:text-white transition-colors cursor-pointer">Sistemas</span>
-        <span className="hover:text-white transition-colors cursor-pointer">Seguridad</span>
-        <span className="hover:text-white transition-colors cursor-pointer">Métricas</span>
+        {isRoot ? (
+          <>
+            <Link href="#arquitectura" className="hover:text-white transition-colors">Sistemas</Link>
+            <Link href="#seguridad" className="hover:text-white transition-colors">Seguridad</Link>
+            <Link href="#metricas" className="hover:text-white transition-colors">Métricas</Link>
+            <Link href="#contacto" className="hover:text-white transition-colors">Contacto</Link>
+          </>
+        ) : (
+          <Link href="/" className="hover:text-white transition-colors">← Volver</Link>
+        )}
+        <span className="w-px h-3 bg-white/20 self-center" />
+        <Link href="/login" className="hover:text-[#ff0055] transition-colors">Sign in</Link>
+        <Link
+          href="/hq"
+          className="text-[#ff0055] hover:text-white transition-colors"
+        >
+          HQ ↗
+        </Link>
       </nav>
     </header>
   )

@@ -1,5 +1,6 @@
 import { ReactNode } from "react"
 import { ShieldAlert, LogOut, LayoutDashboard, Settings } from "lucide-react"
+import { signOutAction } from "@/lib/auth/login-actions"
 
 export default function SuperAdminLayout({
   children,
@@ -64,8 +65,8 @@ export default function SuperAdminLayout({
             <LayoutDashboard size={18} />
             Tenants
           </a>
-          <a 
-            href="#" 
+          <a
+            href="/hq#config"
             className="flex items-center gap-3 text-sm px-4 py-2.5 rounded-md transition-all"
             style={{ color: 'var(--acid-text-dim)' }}
           >
@@ -74,18 +75,20 @@ export default function SuperAdminLayout({
           </a>
         </nav>
 
-        <div 
+        <div
           className="pt-6"
           style={{ borderTop: '2px solid var(--acid-border)' }}
         >
-          <a 
-            href="/login?logout=true" 
-            className="flex items-center gap-3 text-sm px-4 py-2 rounded-md transition-all"
-            style={{ color: 'var(--acid-danger)' }}
-          >
-            <LogOut size={16} />
-            Sign Out
-          </a>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="flex items-center gap-3 text-sm px-4 py-2 rounded-md transition-all w-full text-left cursor-pointer"
+              style={{ color: 'var(--acid-danger)' }}
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          </form>
         </div>
       </aside>
 

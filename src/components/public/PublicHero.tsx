@@ -23,11 +23,18 @@ export function PublicHero() {
 
       <div className="flex flex-col sm:flex-row gap-8 items-center">
         <OpenChatButton />
-        
+
         <Link href="#arquitectura" className="text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-500 hover:text-[#ff0055] transition-all underline decoration-neutral-800 hover:decoration-[#ff0055] underline-offset-4">
           Ver Arquitectura
         </Link>
       </div>
+
+      <Link
+        href="/login"
+        className="mt-6 text-[10px] uppercase tracking-[0.3em] text-neutral-600 hover:text-neutral-300 transition-colors"
+      >
+        ¿Ya tienes cuenta? <span className="text-[#ff0055]">Sign in →</span>
+      </Link>
     </div>
   )
 }
