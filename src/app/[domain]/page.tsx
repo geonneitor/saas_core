@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { unstable_cache } from 'next/cache';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -11,19 +13,29 @@ import { LiveTrialWizard } from '@/components/tenant-ui/LiveTrialWizard';
 
 import type { Metadata } from 'next';
 
+const getTenantData = unstable_cache(
+  async (domain: string) => {
+    const supabaseAnon = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    return supabaseAnon
+      .from('tenants')
+      .select('id, name, subdomain, is_active, owner_id, business_settings(id, tenant_id, theme, font, hero_image, brand_tagline, ai_avatar, system_status, whatsapp_number, opening_time, closing_time, services_json)')
+      .eq('subdomain', domain)
+      .single();
+  },
+  ['tenant-data'],
+  { revalidate: 60, tags: ['tenants'] }
+);
+
 export async function generateMetadata(
   props: { params: Promise<{ domain: string }> }
 ): Promise<Metadata> {
   const params = await props.params;
   const domain = params.domain;
-  // Use authenticated/anon client to respect RLS
-  const supabase = await createClient();
 
-  const { data: tenant, error } = await supabase
-    .from('tenants')
-    .select('name, business_settings(id, tenant_id, theme, font, hero_image, brand_tagline, ai_avatar, system_status, whatsapp_number, opening_time, closing_time, services_json)')
-    .eq('subdomain', domain)
-    .single();
+  const { data: tenant, error } = await getTenantData(domain);
 
   if (error || !tenant) {
     console.error("[METADATA] Tenant fetch error for domain", domain, error);
@@ -47,12 +59,8 @@ export default async function TenantLandingPage(props: {
   const domain = params.domain;
   const supabase = await createClient();
 
-  // 1. Validar Inquilino (Anon/Auth Client para lectura pública con RLS)
-  const { data: tenant, error } = await supabase
-    .from('tenants')
-    .select('id, name, subdomain, is_active, owner_id, business_settings(id, tenant_id, theme, font, hero_image, brand_tagline, ai_avatar, system_status, whatsapp_number, opening_time, closing_time, services_json)')
-    .eq('subdomain', domain)
-    .single();
+  // 1. Validar Inquilino con caché agresiva para proteger base de datos
+  const { data: tenant, error } = await getTenantData(domain);
 
   if (!tenant || !tenant.is_active) {
     console.error(`[TENANT PAGE] Tenant not found or inactive for domain: "${domain}". Error:`, error);

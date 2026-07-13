@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 
+export const revalidate = 60;
+
 export default async function PartnerDashboardPage(props: { 
   params: Promise<{ domain: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
