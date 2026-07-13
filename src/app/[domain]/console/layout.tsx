@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { Settings, Calendar, BrainCircuit, Activity, ChevronLeft, ShoppingBag } from 'lucide-react';
+import { Settings, Calendar, BrainCircuit, Activity, ChevronLeft, ShoppingBag, Users, CreditCard } from 'lucide-react';
 
 export default async function PartnerConsoleLayout({ children, params }: { children: ReactNode, params: Promise<{ domain: string }> }) {
   const resolvedParams = await params;
@@ -23,6 +23,9 @@ export default async function PartnerConsoleLayout({ children, params }: { child
           <Link href="/console" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white">
             <Activity className="w-4 h-4" /> Dashboard (ROI)
           </Link>
+          <Link href="/console/customers" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white">
+            <Users className="w-4 h-4" /> Directorio Clientes
+          </Link>
           <Link href="/console/ai-training" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gold-primary/10 border border-gold-primary/20 text-gold-light text-sm font-bold">
             <BrainCircuit className="w-4 h-4" /> AI Control Center
           </Link>
@@ -32,6 +35,12 @@ export default async function PartnerConsoleLayout({ children, params }: { child
           <Link href="/console/store" className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white group">
             <span className="flex items-center gap-3"><ShoppingBag className="w-4 h-4" /> Marketplace</span>
             <span className="text-[9px] bg-gold-primary/20 text-gold-light px-2 py-0.5 rounded-full uppercase tracking-widest font-bold group-hover:bg-gold-primary group-hover:text-black transition-colors">Nuevo</span>
+          </Link>
+          <Link href="/console/billing" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white">
+            <CreditCard className="w-4 h-4" /> Facturación
+          </Link>
+          <Link href="/console/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-white/70 hover:text-white">
+            <Settings className="w-4 h-4" /> Configuración
           </Link>
         </nav>
 
