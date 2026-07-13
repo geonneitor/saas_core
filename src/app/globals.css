@@ -184,3 +184,35 @@
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
 }
+
+@layer base {
+  :root {
+    /* Acid Brutalist Tokens */
+    --acid-bg: #050505;
+    --acid-card: #0D0D0D;
+    --acid-border: #1A1A1A;
+    --acid-border-hover: #2A2A2A;
+    --acid-neon: #C1FF00;
+    --acid-neon-dim: #8FB800;
+    --acid-text: #E5E5E5;
+    --acid-text-dim: #888888;
+    --acid-danger: #FF3D3D;
+    --acid-warn: #FFB800;
+  }
+}
+
+@layer utilities {
+  .border-brutal {
+    border: 2px solid var(--acid-border);
+  }
+  .border-brutal-hover:hover {
+    border-color: var(--acid-border-hover);
+  }
+  .neon-glow {
+    box-shadow: 0 0 12px rgba(193, 255, 0, 0.3);
+  }
+  .neon-text {
+    color: var(--acid-neon);
+    text-shadow: 0 0 8px rgba(193, 255, 0, 0.4);
+  }
+}

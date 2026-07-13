@@ -15,22 +15,28 @@ interface TenantsDirectoryTableProps {
 
 export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryTableProps) {
   return (
-    <Card className="bg-neutral-900/50 border-neutral-800">
+    <Card 
+      className="border-brutal rounded-none"
+      style={{ backgroundColor: 'var(--acid-card)' }}
+    >
       <CardHeader>
-        <CardTitle className="text-white">Directorio de Negocios (Tenants)</CardTitle>
-        <CardDescription className="text-neutral-400">
+        <CardTitle style={{ color: 'var(--acid-text)' }}>Directorio de Negocios (Tenants)</CardTitle>
+        <CardDescription style={{ color: 'var(--acid-text-dim)' }}>
           Administra accesos, revisa consumos y mapea a tus clientes.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
-          <TableHeader className="border-neutral-800">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-neutral-400">Negocio</TableHead>
-              <TableHead className="text-neutral-400">Estado</TableHead>
-              <TableHead className="text-neutral-400">Consumo IA</TableHead>
-              <TableHead className="text-neutral-400">Contacto</TableHead>
-              <TableHead className="text-right text-neutral-400">Acciones</TableHead>
+          <TableHeader>
+            <TableRow 
+              className="hover:bg-transparent"
+              style={{ backgroundColor: 'var(--acid-bg)' }}
+            >
+              <TableHead className="uppercase text-[10px] tracking-widest" style={{ color: 'var(--acid-text-dim)' }}>Negocio</TableHead>
+              <TableHead className="uppercase text-[10px] tracking-widest" style={{ color: 'var(--acid-text-dim)' }}>Estado</TableHead>
+              <TableHead className="uppercase text-[10px] tracking-widest" style={{ color: 'var(--acid-text-dim)' }}>Consumo IA</TableHead>
+              <TableHead className="uppercase text-[10px] tracking-widest" style={{ color: 'var(--acid-text-dim)' }}>Contacto</TableHead>
+              <TableHead className="uppercase text-[10px] tracking-widest text-right" style={{ color: 'var(--acid-text-dim)' }}>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -41,29 +47,43 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                 : 0;
               
               return (
-                <TableRow key={tenant.id} className="border-neutral-800 hover:bg-white/5 transition-colors">
+                <TableRow 
+                  key={tenant.id} 
+                  className="transition-colors border-b-0 hover:border-l-2 hover:bg-[var(--acid-bg)] hover:border-l-[var(--acid-neon)]"
+                  style={{ borderBottom: '1px solid var(--acid-border)' }}
+                >
                   <TableCell>
-                    <div className="font-medium text-white">{tenant.name}</div>
-                    <a href={`https://${tenant.subdomain}.geo-dev.online`} target="_blank" rel="noreferrer" className="text-xs text-emerald-500 hover:underline">
+                    <div className="font-bold" style={{ color: 'var(--acid-text)' }}>{tenant.name}</div>
+                    <a href={`https://${tenant.subdomain}.geo-dev.online`} target="_blank" rel="noreferrer" className="text-xs hover:underline" style={{ color: 'var(--acid-neon-dim)' }}>
                       {tenant.subdomain}.geo-dev.online
                     </a>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={tenant.is_active ? "default" : "destructive"} className={tenant.is_active ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20" : ""}>
+                    <Badge 
+                      variant="outline"
+                      className="border-brutal"
+                      style={{ 
+                        color: tenant.is_active ? 'var(--acid-neon)' : 'var(--acid-text-dim)',
+                        backgroundColor: 'var(--acid-bg)'
+                      }}
+                    >
                       {tenant.is_active ? 'Activo' : 'Suspendido'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-full bg-neutral-800 rounded-full h-2 max-w-[100px]">
+                      <div className="w-full rounded-none h-2 max-w-[100px]" style={{ backgroundColor: 'var(--acid-bg)', border: '1px solid var(--acid-border)' }}>
                         <div 
-                          className={`h-2 rounded-full ${usagePercent > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`} 
-                          style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                          className="h-full" 
+                          style={{ 
+                            backgroundColor: usagePercent > 80 ? 'var(--acid-danger)' : 'var(--acid-neon)',
+                            width: `${Math.min(usagePercent, 100)}%` 
+                          }}
                         />
                       </div>
-                      <span className="text-xs text-neutral-400">{usagePercent}%</span>
+                      <span className="text-xs" style={{ color: 'var(--acid-text-dim)', fontFamily: 'var(--font-geist-mono)' }}>{usagePercent}%</span>
                     </div>
-                    <div className="text-[10px] text-neutral-500 mt-1 mb-2">
+                    <div className="text-[10px] mt-1 mb-2" style={{ color: 'var(--acid-text-dim)', fontFamily: 'var(--font-geist-mono)' }}>
                       {tenant.ai_tokens_used || 0} / {tenant.ai_token_limit || 0}
                     </div>
                     <UpdateTokenLimitForm tenantId={tenant.id} currentLimit={tenant.ai_token_limit || 0} />
@@ -72,7 +92,7 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                     <div className="flex gap-2">
                       {settings?.whatsapp_number && (
                         <a href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" title="Contactar WhatsApp">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-neutral-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-full">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-none border-brutal hover:border-brutal-hover" style={{ backgroundColor: 'var(--acid-bg)', color: 'var(--acid-neon)' }}>
                             <MessageCircle size={14} />
                           </Button>
                         </a>
@@ -97,7 +117,7 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
             
             {tenants?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                <TableCell colSpan={5} className="text-center py-8" style={{ color: 'var(--acid-text-dim)' }}>
                   No hay inquilinos registrados aún.
                 </TableCell>
               </TableRow>
@@ -108,4 +128,3 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
     </Card>
   )
 }
-
