@@ -18,7 +18,7 @@ export async function createTenant(formData: FormData) {
       ai_prompt: `Eres el asistente virtual experto de ${name}. Eres sumamente educado, amable y resolutivo. Tu único objetivo es agendar citas.`,
       opening_time: '09:00:00',
       closing_time: '20:00:00',
-      ai_tokens_limit: 1000 // Inicializar con 1000 tokens para la prueba de 7 días
+      ai_token_limit: 1000 // Inicializar con 1000 tokens para la prueba de 7 días
     });
   }
 

@@ -1,7 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ShoppingBag, MessageSquare, LineChart, CreditCard, Zap, Share2, Copy } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { PurchaseButton } from './PurchaseButton';
+import { PaymentStatusBanner } from './PaymentStatusBanner';
 
 const MODULES = [
   {
@@ -52,6 +54,11 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20">
+      {/* Post-Checkout Feedback */}
+      <Suspense fallback={null}>
+        <PaymentStatusBanner />
+      </Suspense>
+
       <header>
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-full bg-gold-primary/20 flex items-center justify-center">

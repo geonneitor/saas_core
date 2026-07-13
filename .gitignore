@@ -48,3 +48,22 @@ scratch_*.js
 
 # temp dev server logs
 /tmp/
+
+# Foundational Agent Skills outputs (no commitear)
+/.forensics/
+/workspace-profile.json
+/FORENSICS_SUMMARY.md
+/PLAN.json
+/PLAN_*.json
+/RENAME_SUMMARY.md
+/REPO_SYNC_REPORT.md
+/CLEAN_LOG.txt
+/NEXT.md
+/DUPLICATE_REPORT.md
+/COMPLETE_GITIGNORE
+/VERIFICATION_REPORT.md
+/postmortem-*.md
+/skill-proposal-*.md
+/test-results/
+/.forensics/
+/.staging/

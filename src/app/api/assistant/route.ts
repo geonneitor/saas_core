@@ -3,6 +3,7 @@ export const maxDuration = 30;
 
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { google } from '@ai-sdk/google';
 import { generateText, tool } from 'ai';
 import { z } from 'zod';
@@ -17,25 +18,36 @@ import {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages, tenantId, isAdmin } = body;
+    const { messages, tenantId } = body;
 
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: 'El campo "messages" debe ser un array' }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const adminSupabase = createAdminClient();
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    let isAdmin = false;
     let dynamicContext = "";
-    let basePrompt = isAdmin ? "Eres un asistente administrativo." : "Eres un asistente virtual para clientes.";
+    let basePrompt = "Eres un asistente virtual para clientes.";
     let settings: any = null;
     let tenantData: any = null;
 
     if (tenantId) {
       // 1. Obtener settings del negocio
-      const { data: fetchedSettings } = await supabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
+      const { data: fetchedSettings } = await adminSupabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
       settings = fetchedSettings;
       
-      const { data: fetchedTenantData } = await supabase.from('tenants').select('setup_fee_paid, ai_token_limit, ai_tokens_used').eq('id', tenantId).single();
+      const { data: fetchedTenantData } = await adminSupabase.from('tenants').select('setup_fee_paid, ai_token_limit, ai_tokens_used, owner_id').eq('id', tenantId).single();
       tenantData = fetchedTenantData;
+      
+      if (user && tenantData?.owner_id === user.id) {
+        isAdmin = true;
+      }
+      
+      basePrompt = isAdmin ? "Eres un asistente administrativo." : "Eres un asistente virtual para clientes.";
+
       
       // Validar periodo de prueba y pago de adquisición
       const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at) : new Date(9999, 11, 31);
@@ -113,7 +125,7 @@ PROHIBICIONES:
         const endOfDay = new Date(startOfDay);
         endOfDay.setDate(endOfDay.getDate() + 1);
 
-        const { data: appointments } = await supabase
+        const { data: appointments } = await adminSupabase
           .from('appointments')
           .select('id, status, start_time, customers(name)')
           .eq('tenant_id', tenantId)
@@ -227,7 +239,7 @@ PROHIBICIONES:
 
     if (tenantId) {
       const used = tenantData?.ai_tokens_used || 0;
-      supabase.from('tenants').update({ ai_tokens_used: used + 1 }).eq('id', tenantId).then(({error}) => {
+      adminSupabase.from('tenants').update({ ai_tokens_used: used + 1 }).eq('id', tenantId).then(({error}) => {
         if (error) console.error('[API /assistant] Error incrementing tokens:', error);
       });
     }

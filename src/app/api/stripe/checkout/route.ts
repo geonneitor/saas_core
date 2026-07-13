@@ -2,10 +2,16 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia' as any,
 });
 
+/**
+ * POST /api/stripe/checkout
+ * Creates a Stripe Checkout Session for module purchases or token packs.
+ * @body {{ moduleId: string, tenantId: string, title: string, price: number }}
+ * @returns {{ url: string }} - Stripe Checkout URL to redirect the user to.
+ */
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -17,51 +23,54 @@ export async function POST(req: Request) {
 
     const { moduleId, tenantId, title, price } = await req.json();
 
-    if (!moduleId || !tenantId || !price) {
-      return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
+    if (!moduleId || !tenantId || !price || price <= 0) {
+      return NextResponse.json({ error: 'Datos incompletos o precio inválido' }, { status: 400 });
     }
 
-    // Validar que el usuario sea dueño o admin del tenant
+    // Validar ownership: el usuario autenticado DEBE ser dueño del tenant
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('owner_id')
+      .select('owner_id, subdomain')
       .eq('id', tenantId)
       .single();
 
-    if (!tenant) {
-      return NextResponse.json({ error: 'Inquilino no encontrado' }, { status: 404 });
+    if (!tenant || tenant.owner_id !== user.id) {
+      return NextResponse.json({ error: 'No autorizado para este negocio' }, { status: 403 });
     }
 
-    // Configurar la URL de retorno
-    const domain = process.env.NODE_ENV === 'development' ? 'http://app.localhost:3000' : 'https://app.tu-dominio.com';
-    // Ideally we would redirect back to the specific tenant domain, but for security Stripe needs exact pre-registered domains.
-    // For this MVP, we redirect back to the central app or trust the referrer.
-    const successUrl = `${req.headers.get('origin')}/console/store?success=true&module=${moduleId}`;
-    const cancelUrl = `${req.headers.get('origin')}/console/store?canceled=true`;
+    // Construir URLs de retorno robustas para multi-tenant
+    const origin = req.headers.get('origin')
+      || (process.env.NODE_ENV === 'development'
+        ? `http://${tenant.subdomain}.localhost:3000`
+        : `https://${tenant.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`);
+
+    const successUrl = `${origin}/console/store?success=true&module=${moduleId}`;
+    const cancelUrl = `${origin}/console/store?canceled=true`;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      customer_email: user.email,
       line_items: [
         {
           price_data: {
             currency: 'usd',
             product_data: {
               name: title || 'Módulo Premium',
-              description: 'Compra de módulo para ' + moduleId,
+              description: `Desbloqueo de ${title || moduleId} — pago único`,
             },
-            unit_amount: price * 100, // Stripe expects cents
+            unit_amount: Math.round(price * 100), // Stripe expects cents
           },
           quantity: 1,
         },
       ],
-      mode: 'payment', // One-time payment
+      mode: 'payment',
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
         tenantId,
         moduleId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     });
 
     return NextResponse.json({ url: session.url });
