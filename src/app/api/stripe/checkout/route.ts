@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/stripe/checkout
@@ -10,6 +11,15 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const rateLimitResult = await rateLimit(ip, 5, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Demasiadas peticiones. Por favor, intenta más tarde.' },
+        { status: 429 }
+      );
+    }
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2024-12-18.acacia' as any,
     });

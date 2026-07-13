@@ -14,9 +14,19 @@ import {
   rescheduleAppointment,
   getBusinessStats
 } from '@/lib/ai/tools';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const rateLimitResult = await rateLimit(ip, 15, 60000);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Demasiadas peticiones. Por favor, intenta más tarde.' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { messages, tenantId } = body;
 
