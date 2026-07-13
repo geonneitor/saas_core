@@ -1,5 +1,4 @@
-﻿src/app/[domain]/console/store/PaymentStatusBanner.tsx
-src/app/api/stripe/checkout/route.ts
+﻿src/app/layout.tsx
+src/lib/supabase/middleware.ts
+ARCHITECTURE.md
 SAAS_CORE_SYSTEM_REPORT.md
-AGENTS.md
-AUDIT_REPORT.md
