@@ -15,6 +15,7 @@ import {
   getBusinessStats
 } from '@/lib/ai/tools';
 import { rateLimit } from '@/lib/rate-limit';
+import { resolveTenantFromHost, reconcileTenantId } from '@/lib/ai/tenant-resolver';
 
 export async function POST(req: Request) {
   try {
@@ -28,15 +29,36 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { messages, tenantId } = body;
+    const { messages, tenantId: bodyTenantId } = body;
 
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: 'El campo "messages" debe ser un array' }, { status: 400 });
     }
 
+    // SECURITY: Resolve tenant from host header. If the body claims a different
+    // tenantId than the subdomain the request came from, reject as spoofing.
+    const hostTenant = resolveTenantFromHost(req.headers.get('host'));
+    const { tenantId: resolvedTenant, mismatch } = reconcileTenantId(hostTenant, bodyTenantId);
+
+    if (mismatch) {
+      const ip = req.headers.get('x-forwarded-for') || 'unknown';
+      console.error(
+        `[AI Security] tenant mismatch: host=${hostTenant} body=${bodyTenantId} ip=${ip}`
+      );
+      return NextResponse.json(
+        { error: 'tenantId does not match the request origin' },
+        { status: 403 }
+      );
+    }
+
     const adminSupabase = createAdminClient();
     const supabaseClient = await createClient();
     const { data: { user } } = await supabaseClient.auth.getUser();
+
+    // Si no hay tenant resuelto, el chat opera en modo "demo" sin tools mutadoras.
+    // Las tools de lectura y mutación quedan registradas solo si hay tenant.
+    const tenantId: string | null = resolvedTenant;
+    const hasTenant = tenantId !== null;
     
     let isAdmin = false;
     let dynamicContext = "";
@@ -162,17 +184,33 @@ PROHIBICIONES:
 
     const tools: Record<string, any> = {};
 
+    if (!hasTenant) {
+      // Sin tenant resuelto, retornamos respuesta genérica sin tools mutadoras.
+      // Esto cubre el caso de la landing root (/, debugGeo) sin subdominio de tenant.
+      const result = await generateText({
+        model: google('gemini-1.5-flash'),
+        system: basePrompt,
+        messages: aiMessages,
+        // @ts-ignore
+        maxSteps: 1,
+      });
+      return NextResponse.json({ reply: result.text || '', toolCalls: [] });
+    }
+
+    // From here, tenantId is non-null. Narrow for TS.
+    const tid: string = tenantId;
+
     tools.check_availability = tool({
       description: "Revisa la disponibilidad en el calendario para una fecha específica (YYYY-MM-DD). Llama a esto SIEMPRE antes de agendar.",
       parameters: z.object({ date: z.string().describe("La fecha a consultar en formato YYYY-MM-DD") }),
       // @ts-ignore
-      execute: async ({ date }) => await checkAvailability(tenantId, date)
+      execute: async ({ date }) => await checkAvailability(tid, date)
     });
 
     tools.book_appointment = tool({
       description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente. Es altamente recomendado solicitar y proporcionar el número de teléfono para confirmaciones.",
-      parameters: z.object({ 
-        customerName: z.string().describe("Nombre completo del cliente"), 
+      parameters: z.object({
+        customerName: z.string().describe("Nombre completo del cliente"),
         customerEmail: z.string().optional().describe("Email del cliente (opcional)"),
         customerPhone: z.string().optional().describe("Número de teléfono del cliente (opcional, recomendado)"),
         date: z.string().describe("YYYY-MM-DD"),
@@ -181,19 +219,19 @@ PROHIBICIONES:
       }),
       // @ts-ignore
       execute: async ({ customerName, customerEmail, customerPhone, date, time, notes }) => {
-        return await bookAppointment(tenantId, customerName, customerEmail, customerPhone, date, time, notes);
+        return await bookAppointment(tid, customerName, customerEmail, customerPhone, date, time, notes);
       }
     });
 
     tools.cancel_appointment = tool({
       description: "Cancela una cita dado su ID. Requiere el correo electrónico o número de teléfono del cliente para verificación.",
-      parameters: z.object({ 
+      parameters: z.object({
         appointmentId: z.string().describe("El ID de la cita a cancelar"),
         customerEmailOrPhone: z.string().describe("El correo electrónico o número de teléfono del cliente registrado en la cita")
       }),
       // @ts-ignore
       execute: async ({ appointmentId, customerEmailOrPhone }) => {
-        return await cancelAppointment(tenantId, appointmentId, customerEmailOrPhone, isAdmin);
+        return await cancelAppointment(tid, appointmentId, customerEmailOrPhone, isAdmin, user?.id ?? null);
       }
     });
 
@@ -207,7 +245,7 @@ PROHIBICIONES:
         }),
         // @ts-ignore
         execute: async ({ appointmentId, newDate, newTime }) => {
-          return await rescheduleAppointment(tenantId, appointmentId, newDate, newTime, undefined, true);
+          return await rescheduleAppointment(tid, appointmentId, newDate, newTime, undefined, true, user?.id ?? null);
         }
       });
 
@@ -215,7 +253,7 @@ PROHIBICIONES:
         description: "Obtiene estadísticas del negocio como total de clientes y citas pendientes. Úsalo cuando te pidan un resumen o estatus del negocio.",
         parameters: z.object({}),
         // @ts-ignore
-        execute: async () => await getBusinessStats(tenantId)
+        execute: async () => await getBusinessStats(tid)
       });
 
       tools.navigate_to = tool({
