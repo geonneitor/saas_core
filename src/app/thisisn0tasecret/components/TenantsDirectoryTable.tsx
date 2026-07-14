@@ -6,6 +6,7 @@ import { MessageCircle } from "lucide-react"
 import MapModal from "../MapModal"
 import { UpdateTokenLimitForm } from "./UpdateTokenLimitForm"
 import { DeleteTenantForm } from "./DeleteTenantForm"
+import { ConfigureTenantModal } from "./ConfigureTenantModal"
 import { deleteTenant } from "../actions"
 
 interface TenantsDirectoryTableProps {
@@ -107,7 +108,8 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <ConfigureTenantModal tenantId={tenant.id} tenantName={tenant.name} />
                       <DeleteTenantForm tenantId={tenant.id} tenantName={tenant.name} action={deleteTenant} />
                     </div>
                   </TableCell>

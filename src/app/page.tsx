@@ -41,10 +41,6 @@ export default function LandingPage() {
 
         <footer className="mt-32 pt-8 border-t border-white/10 w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest text-neutral-600">
           <p>© 2026 Geo-Dev · Boutique AI SaaS</p>
-          <div className="flex gap-6">
-            <a href="/login" className="hover:text-white transition-colors">Sign in</a>
-            <a href="/hq" className="hover:text-white transition-colors">HQ Dashboard</a>
-          </div>
         </footer>
       </main>
 

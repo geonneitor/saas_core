@@ -34,12 +34,12 @@ export default async function proxy(req: NextRequest) {
   let isAdminApp = false;
   let isSuperAdminApp = false;
 
-  // 1. REESCRITURA PARA EL SUPER ADMIN PANEL (hq)
+  // 1. REESCRITURA PARA EL SUPER ADMIN PANEL (thisisn0tasecret)
   if (hostname === `hq.${rootDomain}`) {
     isSuperAdminApp = true;
     let finalPath = path;
     if (!path.startsWith('/login') && !path.startsWith('/auth')) {
-      finalPath = path === '/' ? '/hq' : `/hq${path}`;
+      finalPath = path === '/' ? '/thisisn0tasecret' : `/thisisn0tasecret${path}`;
     }
     console.log(`[PROXY] Rewriting SUPER ADMIN request for ${hostname}${path} -> ${finalPath}`);
     response = NextResponse.rewrite(new URL(finalPath, req.url));

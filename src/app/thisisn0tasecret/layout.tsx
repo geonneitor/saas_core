@@ -54,7 +54,7 @@ export default function SuperAdminLayout({
 
         <nav className="flex-1 space-y-2">
           <a 
-            href="/hq" 
+            href="/thisisn0tasecret" 
             className="flex items-center gap-3 text-sm px-4 py-2.5 rounded-md transition-all"
             style={{ 
               backgroundColor: 'var(--acid-bg)',
@@ -66,7 +66,7 @@ export default function SuperAdminLayout({
             Tenants
           </a>
           <a
-            href="/hq#config"
+            href="/thisisn0tasecret#config"
             className="flex items-center gap-3 text-sm px-4 py-2.5 rounded-md transition-all"
             style={{ color: 'var(--acid-text-dim)' }}
           >

@@ -40,12 +40,39 @@ export async function updateSession(
     }
   )
 
+  // Redirect /hq to 404 in production (hide secret route)
+  if (request.nextUrl.pathname.startsWith('/hq') && process.env.NODE_ENV === 'production') {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   // This will refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/server-side/nextjs
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
   
+  // 0. EMAIL WHITELIST ENFORCEMENT (Database-backed with fallback)
+  // If user is authenticated but email not in whitelist, force logout
+  if (user && user.email) {
+    // Fallback whitelist for when migration hasn't been run yet
+    const FALLBACK_WHITELIST = ['cesargeo56@gmail.com'];
+    
+    const { data: isWhitelisted, error } = await supabase
+      .rpc('is_email_whitelisted', { check_email: user.email });
+    
+    // If RPC fails (function doesn't exist), use fallback whitelist
+    // If RPC succeeds, use database result
+    const allowed = error ? FALLBACK_WHITELIST.includes(user.email) : !!isWhitelisted;
+    
+    if (!allowed) {
+      await supabase.auth.signOut()
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = '/login'
+      loginUrl.searchParams.set('error', 'unauthorized-email')
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   // 1. Proteger rutas de Super Admin
   if (isSuperAdminApp) {
     // Si no hay user, forzar login
@@ -60,12 +87,9 @@ export async function updateSession(
 
     // Si hay user, validar que sea el email autorizado
     if (user && !isSuperAdmin) {
-      // Intento de acceso no autorizado, patearlo.
       const unauthorizedUrl = request.nextUrl.clone()
-      unauthorizedUrl.pathname = '/login' // podriamos mandarlo a un /unauthorized
+      unauthorizedUrl.pathname = '/login'
       unauthorizedUrl.searchParams.set('error', 'unauthorized')
-      // Cerramos su sesion en este flujo redireccionando o forzando logout? 
-      // Por ahora solo no le dejamos ver el panel
       return NextResponse.redirect(unauthorizedUrl)
     }
 
@@ -80,13 +104,11 @@ export async function updateSession(
   // 2. Proteger rutas de Tenant Admin (SaaS Core)
   if (isAdminApp && !isSuperAdminApp) {
     if (!user && !isAuthRoute && (request.nextUrl.pathname.startsWith('/console') || request.nextUrl.pathname === '/')) {
-      // Si no hay user, forzamos login.
       const loginUrl = request.nextUrl.clone()
       loginUrl.pathname = '/login'
       return NextResponse.redirect(loginUrl)
     }
 
-    // Si ya está logueado y trata de ir a login EN LA APP DE ADMIN, mandarlo al admin
     if (user && isAuthRoute) {
       const adminUrl = request.nextUrl.clone()
       adminUrl.pathname = '/console'

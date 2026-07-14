@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 import { NextResponse } from 'next/server';
@@ -55,10 +55,24 @@ export async function POST(req: Request) {
     const supabaseClient = await createClient();
     const { data: { user } } = await supabaseClient.auth.getUser();
 
-    // Si no hay tenant resuelto, el chat opera en modo "demo" sin tools mutadoras.
-    // Las tools de lectura y mutación quedan registradas solo si hay tenant.
+    // Si no hay tenant resuelto, el chat opera en modo "demo" con tools básicas.
     const tenantId: string | null = resolvedTenant;
     const hasTenant = tenantId !== null;
+    
+    // Si es localhost y no hay tenant, usar primer tenant disponible para testing
+    let resolvedTenantId = tenantId;
+    if (!resolvedTenantId && process.env.NODE_ENV === 'development') {
+      const { data: firstTenant } = await adminSupabase
+        .from('tenants')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      if (firstTenant) {
+        resolvedTenantId = firstTenant.id;
+        console.log('[Lotito] Modo dev: usando tenant', resolvedTenantId);
+      }
+    }
     
     let isAdmin = false;
     let dynamicContext = "";
@@ -184,94 +198,96 @@ PROHIBICIONES:
 
     const tools: Record<string, any> = {};
 
-    if (!hasTenant) {
-      // Sin tenant resuelto, retornamos respuesta genérica sin tools mutadoras.
-      // Esto cubre el caso de la landing root (/, debugGeo) sin subdominio de tenant.
-      const result = await generateText({
-        model: google('gemini-1.5-flash'),
-        system: basePrompt,
-        messages: aiMessages,
-        // @ts-ignore
-        maxSteps: 1,
+    // Solo definir tools de base de datos si hay un tenantId válido
+    const tid: string | null = resolvedTenantId;
+
+    if (tid) {
+      tools.check_availability = tool({
+        description: "Revisa la disponibilidad en el calendario para una fecha específica (YYYY-MM-DD). Llama a esto SIEMPRE antes de agendar.",
+        parameters: z.object({ date: z.string().describe("La fecha a consultar en formato YYYY-MM-DD") }),
+        // @ts-ignore - AI SDK v7 type inference limitation
+        execute: async ({ date }: { date: string }) => await checkAvailability(tid, date)
       });
-      return NextResponse.json({ reply: result.text || '', toolCalls: [] });
-    }
 
-    // From here, tenantId is non-null. Narrow for TS.
-    const tid: string = tenantId;
-
-    tools.check_availability = tool({
-      description: "Revisa la disponibilidad en el calendario para una fecha específica (YYYY-MM-DD). Llama a esto SIEMPRE antes de agendar.",
-      parameters: z.object({ date: z.string().describe("La fecha a consultar en formato YYYY-MM-DD") }),
-      // @ts-ignore
-      execute: async ({ date }) => await checkAvailability(tid, date)
-    });
-
-    tools.book_appointment = tool({
-      description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente. Es altamente recomendado solicitar y proporcionar el número de teléfono para confirmaciones.",
-      parameters: z.object({
-        customerName: z.string().describe("Nombre completo del cliente"),
-        customerEmail: z.string().optional().describe("Email del cliente (opcional)"),
-        customerPhone: z.string().optional().describe("Número de teléfono del cliente (opcional, recomendado)"),
-        date: z.string().describe("YYYY-MM-DD"),
-        time: z.string().describe("HH:MM"),
-        notes: z.string().optional()
-      }),
-      // @ts-ignore
-      execute: async ({ customerName, customerEmail, customerPhone, date, time, notes }) => {
-        return await bookAppointment(tid, customerName, customerEmail, customerPhone, date, time, notes);
-      }
-    });
-
-    tools.cancel_appointment = tool({
-      description: "Cancela una cita dado su ID. Requiere el correo electrónico o número de teléfono del cliente para verificación.",
-      parameters: z.object({
-        appointmentId: z.string().describe("El ID de la cita a cancelar"),
-        customerEmailOrPhone: z.string().describe("El correo electrónico o número de teléfono del cliente registrado en la cita")
-      }),
-      // @ts-ignore
-      execute: async ({ appointmentId, customerEmailOrPhone }) => {
-        return await cancelAppointment(tid, appointmentId, customerEmailOrPhone, isAdmin, user?.id ?? null);
-      }
-    });
-
-    if (isAdmin) {
-      tools.reschedule_appointment = tool({
-        description: "Reagenda una cita dado su ID, a una nueva fecha y hora.",
+      tools.book_appointment = tool({
+        description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente. Es altamente recomendado solicitar y proporcionar el número de teléfono para confirmaciones.",
         parameters: z.object({
-          appointmentId: z.string().describe("El ID de la cita a reagendar"),
-          newDate: z.string().describe("YYYY-MM-DD"),
-          newTime: z.string().describe("HH:MM")
+          customerName: z.string().describe("Nombre completo del cliente"),
+          customerEmail: z.string().optional().describe("Email del cliente (opcional)"),
+          customerPhone: z.string().optional().describe("Número de teléfono del cliente (opcional, recomendado)"),
+          date: z.string().describe("YYYY-MM-DD"),
+          time: z.string().describe("HH:MM"),
+          notes: z.string().optional()
         }),
-        // @ts-ignore
-        execute: async ({ appointmentId, newDate, newTime }) => {
-          return await rescheduleAppointment(tid, appointmentId, newDate, newTime, undefined, true, user?.id ?? null);
+        // @ts-ignore - AI SDK v7 type inference limitation
+        execute: async (args: any) => {
+          return await bookAppointment(tid, args.customerName, args.customerEmail, args.customerPhone, args.date, args.time, args.notes);
         }
       });
 
-      tools.get_business_stats = tool({
-        description: "Obtiene estadísticas del negocio como total de clientes y citas pendientes. Úsalo cuando te pidan un resumen o estatus del negocio.",
-        parameters: z.object({}),
-        // @ts-ignore
-        execute: async () => await getBusinessStats(tid)
+      tools.cancel_appointment = tool({
+        description: "Cancela una cita dado su ID. Requiere el correo electrónico o número de teléfono del cliente para verificación.",
+        parameters: z.object({
+          appointmentId: z.string().describe("El ID de la cita a cancelar"),
+          customerEmailOrPhone: z.string().describe("El correo electrónico o número de teléfono del cliente registrado en la cita")
+        }),
+        // @ts-ignore - AI SDK v7 type inference limitation
+        execute: async (args: any) => {
+          return await cancelAppointment(tid, args.appointmentId, args.customerEmailOrPhone, isAdmin, user?.id ?? null);
+        }
       });
 
-      tools.navigate_to = tool({
-        description: "Navega y redirige a una sección específica del calendario o panel.",
-        // @ts-ignore
-        parameters: z.object({ route: z.enum(["/", "/clientes"]) })
-      });
+      if (isAdmin) {
+        tools.reschedule_appointment = tool({
+          description: "Reagenda una cita dado su ID, a una nueva fecha y hora.",
+          parameters: z.object({
+            appointmentId: z.string().describe("El ID de la cita a reagendar"),
+            newDate: z.string().describe("YYYY-MM-DD"),
+            newTime: z.string().describe("HH:MM")
+          }),
+          // @ts-ignore - AI SDK v7 type inference limitation
+          execute: async (args: any) => {
+            return await rescheduleAppointment(tid, args.appointmentId, args.newDate, args.newTime, undefined, true, user?.id ?? null);
+          }
+        });
+
+        tools.get_business_stats = tool({
+          description: "Obtiene estadísticas del negocio como total de clientes y citas pendientes. Úsalo cuando te pidan un resumen o estatus del negocio.",
+          parameters: z.object({}),
+          // @ts-ignore - AI SDK v7 type inference limitation
+          execute: async () => await getBusinessStats(tid)
+        });
+      }
     }
 
-    // Frontend Tool
-    tools.refresh_calendar = tool({
-      description: "Actualiza el calendario visual. Úsalo siempre después de agendar, cancelar o reagendar.",
-      // @ts-ignore
-      parameters: z.object({})
+    // Frontend Tools (siempre disponibles, no requieren tenant)
+    // Nota: todas las tools necesitan execute+parameters en AI SDK v7,
+    // incluso si el execute es no-op (la acción real ocurre en el frontend)
+    tools.open_booking_modal = tool({
+      description: "Abre el modal de agendamiento visual para que el cliente pueda ver horarios y reservar.",
+      parameters: z.object({}),
+      // @ts-ignore - AI SDK v7 type inference limitation
+      execute: async () => ({ success: true, message: "Modal opened on client" })
     });
 
+    tools.refresh_calendar = tool({
+      description: "Actualiza el calendario visual. Úsalo siempre después de agendar, cancelar o reagendar.",
+      parameters: z.object({}),
+      // @ts-ignore - AI SDK v7 type inference limitation
+      execute: async () => ({ success: true, message: "Calendar refreshed on client" })
+    });
+
+    tools.navigate_to = tool({
+      description: "Redirige la vista a una sección del panel (ej: / para inicio, /clientes para clientes).",
+      parameters: z.object({ route: z.enum(["/", "/clientes"]) }),
+      // @ts-ignore - AI SDK v7 type inference limitation
+      execute: async (args: any) => ({ success: true, route: args.route, message: "Navigation handled on client" })
+    });
+
+    console.log('[Lotito] Usando modelo con key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? '✓ configurada' : '✗ NO CONFIGURADA');
+
     const result = await generateText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.0-flash'),
       system: basePrompt + dynamicContext,
       messages: aiMessages,
       tools,

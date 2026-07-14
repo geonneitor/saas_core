@@ -2,55 +2,58 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { isSuperAdmin } from '@/lib/auth/super-admin';
 
 export type AuthFormState = { error?: string; success?: string } | undefined;
 
-export async function signInAction(
-  _prev: AuthFormState,
-  formData: FormData
-): Promise<AuthFormState> {
-  const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
+// Simple in-memory rate limiting (resets on server restart)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 3; // Max requests per email
+const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 minutes in milliseconds
 
-  if (!email || !password) {
-    return { error: 'Email y contraseña son obligatorios.' };
+function checkRateLimit(email: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(email);
+  
+  if (!record || now > record.resetTime) {
+    // New window or expired window
+    rateLimitMap.set(email, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
   }
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    return { error: error.message };
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false; // Rate limit exceeded
   }
-
-  // Decide redirect target based on role
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user && (await isSuperAdmin(supabase, user.id))) {
-    redirect('/hq');
-  }
-
-  redirect('/login?welcome=1');
+  
+  record.count++;
+  return true;
 }
 
-export async function signUpAction(
+/**
+ * Send magic link to email address
+ * Whitelist enforcement happens in middleware after authentication
+ * Rate limiting: max 3 requests per email per 10 minutes
+ */
+export async function sendMagicLinkAction(
   _prev: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
   const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
 
-  if (!email || !password) {
-    return { error: 'Email y contraseña son obligatorios.' };
+  if (!email) {
+    return { error: 'Email es obligatorio.' };
   }
-  if (password.length < 8) {
-    return { error: 'La contraseña debe tener al menos 8 caracteres.' };
+
+  // Check rate limit
+  if (!checkRateLimit(email)) {
+    return { 
+      error: 'Demasiadas solicitudes. Por favor espera 10 minutos antes de intentar de nuevo.' 
+    };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  
+  const { error } = await supabase.auth.signInWithOtp({
     email,
-    password,
     options: {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'http://localhost:3000'}/auth/callback`,
     },
@@ -60,7 +63,7 @@ export async function signUpAction(
     return { error: error.message };
   }
 
-  return { success: 'Revisa tu email para confirmar la cuenta.' };
+  return { success: 'Email de verificación enviado. Revisa tu bandeja de entrada.' };
 }
 
 export async function signOutAction(): Promise<void> {

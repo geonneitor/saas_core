@@ -144,6 +144,14 @@ export default function AiAssistantChat({
           if (tool.name === 'refresh_calendar') {
              router.refresh();
           }
+          if (tool.name === 'navigate_to') {
+             const route = tool.arguments?.route;
+             if (route === '/clientes') {
+               router.push('/clientes');
+             } else {
+               router.push('/');
+             }
+          }
         });
       }
     } catch (e) {

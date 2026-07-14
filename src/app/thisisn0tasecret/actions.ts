@@ -28,7 +28,7 @@ export async function createTenant(formData: FormData) {
   }
 
   if (error) console.error("Error creating tenant:", error);
-  revalidatePath('/hq');
+  revalidatePath('/thisisn0tasecret');
 }
 
 export async function deleteTenant(formData: FormData) {
@@ -44,7 +44,7 @@ export async function deleteTenant(formData: FormData) {
   const adminSupabase = createAdminClient();
   await adminSupabase.rpc('suspend_tenant', { p_tenant_id: id });
   
-  revalidatePath('/hq');
+  revalidatePath('/thisisn0tasecret');
   revalidatePath('/', 'layout');
 }
 
@@ -63,5 +63,5 @@ export async function updateTokenLimit(formData: FormData) {
   const adminSupabase = createAdminClient();
   await adminSupabase.rpc('update_tenant_token_limit', { p_tenant_id: id, p_new_limit: limit });
   
-  revalidatePath('/hq');
+  revalidatePath('/thisisn0tasecret');
 }

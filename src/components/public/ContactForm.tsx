@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { signUpAction } from '@/lib/auth/login-actions';
 import { toast } from 'sonner';
 import { Loader2, ArrowRight } from 'lucide-react';
 
@@ -12,13 +11,19 @@ export function ContactForm() {
   function handleSubmit(formData: FormData) {
     if (honeypot) return; // bot detected
     startTransition(async () => {
-      const result = await signUpAction(undefined, formData);
-      if (result?.error) {
-        toast.error(result.error);
-      } else if (result?.success) {
-        toast.success(result.success);
-        (document.getElementById('contact-form') as HTMLFormElement)?.reset();
+      // Simple waitlist signup - just show success message
+      // In production, this would call an API to store the email
+      const email = formData.get('email') as string;
+      if (!email) {
+        toast.error('Email es obligatorio');
+        return;
       }
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success('¡Gracias! Te notificaremos cuando lancemos.');
+      (document.getElementById('contact-form') as HTMLFormElement)?.reset();
     });
   }
 
