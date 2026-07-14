@@ -155,13 +155,10 @@ PROHIBICIONES:
       }
     }
 
-    const aiMessages: any[] = [
-      { role: 'system', content: basePrompt + dynamicContext },
-      ...messages.map((m: any) => ({
-        role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user',
-        content: m.text || m.content,
-      })),
-    ];
+    const aiMessages: any[] = messages.map((m: any) => ({
+      role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user',
+      content: m.text || m.content,
+    }));
 
     const tools: Record<string, any> = {};
 
@@ -237,10 +234,11 @@ PROHIBICIONES:
 
     const result = await generateText({
       model: google('gemini-1.5-flash'),
+      system: basePrompt + dynamicContext,
       messages: aiMessages,
       tools,
       // @ts-ignore
-      maxSteps: 3, 
+      maxSteps: 3,
     });
 
     let reply = result.text || '';
