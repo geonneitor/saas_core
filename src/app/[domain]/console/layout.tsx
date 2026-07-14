@@ -5,7 +5,7 @@ import { Settings, Calendar, BrainCircuit, Activity, ChevronLeft, ShoppingBag, U
 export default async function PartnerConsoleLayout({ children, params }: { children: ReactNode, params: Promise<{ domain: string }> }) {
   const resolvedParams = await params;
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white flex flex-col md:flex-row selection:bg-gold-primary/30 selection:text-gold-light relative overflow-hidden">
+    <div className="client-theme min-h-screen flex flex-col md:flex-row relative overflow-hidden" style={{ backgroundColor: 'var(--zen-bg)', color: 'var(--zen-text)' }}>
       {/* Noise Texture & Glow */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gold-primary/[0.02] rounded-full blur-[120px] pointer-events-none -z-0" />

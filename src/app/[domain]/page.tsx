@@ -118,7 +118,7 @@ export default async function TenantLandingPage(props: {
   ];
 
   return (
-    <div className={`min-h-screen ${theme === 'light-minimal' ? 'bg-[#fafafa]' : 'bg-[#111317]'} selection:bg-primary selection:text-on-primary overflow-x-hidden`}>
+    <div className={`client-theme min-h-screen ${theme === 'light-minimal' ? 'bg-[#fafafa]' : ''} overflow-x-hidden`} style={theme !== 'light-minimal' ? { backgroundColor: 'var(--zen-bg)' } : undefined}>
       {isAdmin && (
         <LiveTrialWizard 
           tenantId={tenant.id} 

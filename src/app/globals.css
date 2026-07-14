@@ -187,9 +187,11 @@ html { scroll-behavior: smooth; }
   animation: shimmer 1.5s infinite;
 }
 
+/* ============================================
+   🧪 ACID BRUTALIST — Admin / Super Admin
+   ============================================ */
 @layer base {
   :root {
-    /* Acid Brutalist Tokens */
     --acid-bg: #050505;
     --acid-card: #0D0D0D;
     --acid-border: #1A1A1A;
@@ -217,4 +219,122 @@ html { scroll-behavior: smooth; }
     color: var(--acid-neon);
     text-shadow: 0 0 8px rgba(193, 255, 0, 0.4);
   }
+}
+
+/* ============================================
+   🌙 ZEN — Client / Customer Facing
+   ============================================ */
+.client-theme {
+  --zen-bg: #0B0F19;
+  --zen-card: #111827;
+  --zen-card-hover: #1a2332;
+  --zen-border: rgba(255, 255, 255, 0.06);
+  --zen-border-light: rgba(255, 255, 255, 0.12);
+  --zen-gold: #D4AF37;
+  --zen-gold-light: #f0d060;
+  --zen-gold-dim: rgba(212, 175, 55, 0.15);
+  --zen-text: #F5F4F0;
+  --zen-text-dim: rgba(245, 244, 240, 0.5);
+  --zen-text-muted: rgba(245, 244, 240, 0.35);
+  --zen-success: #4ADE80;
+  --zen-danger: #FF6B6B;
+  --zen-warn: #FBBF24;
+  --zen-overlay: rgba(0, 0, 0, 0.6);
+  
+  /* Reconectar con Tailwind para que funcione bg-zen-bg etc */
+  --color-zen-bg: #0B0F19;
+  --color-zen-card: #111827;
+  --color-zen-gold: #D4AF37;
+  --color-zen-gold-light: #f0d060;
+  --color-zen-text: #F5F4F0;
+  --color-zen-text-dim: rgba(245, 244, 240, 0.5);
+  --color-zen-success: #4ADE80;
+  --color-zen-danger: #FF6B6B;
+  
+  color-scheme: dark;
+  accent-color: var(--zen-gold);
+}
+
+.client-theme .zen-card {
+  background: var(--zen-card);
+  border: 1px solid var(--zen-border);
+  border-radius: 1rem;
+  transition: all 0.2s ease;
+}
+
+.client-theme .zen-card:hover {
+  background: var(--zen-card-hover);
+  border-color: var(--zen-border-light);
+}
+
+.client-theme .zen-glow {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+}
+
+.client-theme .zen-btn {
+  background: linear-gradient(135deg, var(--zen-gold-light), var(--zen-gold));
+  color: #121212;
+  border: none;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.2);
+  transition: all 0.3s ease;
+}
+
+.client-theme .zen-btn:hover {
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+  transform: translateY(-1px);
+}
+
+.client-theme .zen-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--zen-border);
+  border-radius: 0.75rem;
+  color: var(--zen-text);
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.client-theme .zen-input:focus {
+  border-color: var(--zen-gold);
+  box-shadow: 0 0 0 3px var(--zen-gold-dim);
+  outline: none;
+}
+
+.client-theme .zen-divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--zen-border-light), transparent);
+}
+
+.client-theme .zen-tag {
+  background: var(--zen-gold-dim);
+  color: var(--zen-gold-light);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.client-theme ::selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: var(--zen-gold-light);
+}
+
+/* Scrollbar elegante para el tema cliente */
+.client-theme ::-webkit-scrollbar {
+  width: 6px;
+}
+.client-theme ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.client-theme ::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.2);
+  border-radius: 3px;
+}
+.client-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.4);
 }
