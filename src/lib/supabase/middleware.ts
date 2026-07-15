@@ -69,7 +69,15 @@ export async function updateSession(
       const loginUrl = request.nextUrl.clone()
       loginUrl.pathname = '/login'
       loginUrl.searchParams.set('error', 'unauthorized-email')
-      return NextResponse.redirect(loginUrl)
+      
+      const redirectResponse = NextResponse.redirect(loginUrl)
+      
+      // Copy cookies modified by signOut to the redirect response
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      })
+      
+      return redirectResponse
     }
   }
 

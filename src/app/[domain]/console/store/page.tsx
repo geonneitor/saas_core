@@ -161,7 +161,7 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
       <div>
         <h3 className="text-lg font-bold mb-6">Recargas de IA (Tokens)</h3>
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-black/20 border border-white/5 rounded-3xl p-6 text-center hover:border-gold-primary/30 transition-colors">
+          <div className="zen-card p-6 text-center hover:border-gold-primary/30 transition-colors">
             <Zap className="w-8 h-8 text-gold-primary mx-auto mb-4" />
             <h4 className="font-bold mb-1">Pack Inicial</h4>
             <p className="text-xs text-muted-foreground mb-4">+10,000 interacciones</p>
@@ -180,7 +180,7 @@ export default async function PartnerStorePage(props: { params: Promise<{ domain
             <PurchaseButton tenantId={tenant.id} moduleId="tokens_50k" price={49} title="Pack 50k Tokens" />
           </div>
           
-          <div className="bg-black/20 border border-white/5 rounded-3xl p-6 text-center hover:border-gold-primary/30 transition-colors">
+          <div className="zen-card p-6 text-center hover:border-gold-primary/30 transition-colors">
             <Zap className="w-8 h-8 text-gold-primary mx-auto mb-4" />
             <h4 className="font-bold mb-1">Pack Enterprise</h4>
             <p className="text-xs text-muted-foreground mb-4">+200,000 interacciones</p>

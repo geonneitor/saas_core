@@ -47,7 +47,7 @@ export default async function SettingsPage(props: { params: Promise<{ domain: st
         initialGroqApiKey={settings?.groq_api_key || ''}
       />
 
-      <section className="bg-black/20 border border-white/5 rounded-3xl p-8 card-depth">
+      <section className="zen-card p-8">
         <div className="flex items-start gap-4 mb-6">
           <div className="mt-1">
             <ShieldAlert className="w-5 h-5 text-amber-500" />

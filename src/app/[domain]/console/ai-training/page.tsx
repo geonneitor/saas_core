@@ -41,7 +41,7 @@ export default async function AITrainingPage(props: { params: Promise<{ domain: 
       </header>
 
       {/* Tone & Personality */}
-      <section className="bg-black/20 border border-white/5 rounded-3xl p-8 card-depth">
+      <section className="zen-card p-8">
         <div className="flex items-start gap-4 mb-6">
           <div className="mt-1">
             <MessageSquareText className="w-5 h-5 text-white/50" />
@@ -56,7 +56,7 @@ export default async function AITrainingPage(props: { params: Promise<{ domain: 
       </section>
 
       {/* Services & Pricing */}
-      <section className="bg-black/20 border border-white/5 rounded-3xl p-8 card-depth">
+      <section className="zen-card p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-start gap-4">
             <div className="mt-1">
@@ -73,7 +73,7 @@ export default async function AITrainingPage(props: { params: Promise<{ domain: 
       </section>
 
       {/* Strict Business Rules */}
-      <section className="bg-black/20 border border-white/5 rounded-3xl p-8 card-depth">
+      <section className="zen-card p-8">
         <div className="flex items-start gap-4 mb-6">
           <div className="mt-1">
             <ShieldAlert className="w-5 h-5 text-red-400" />

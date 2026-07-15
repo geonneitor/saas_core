@@ -37,7 +37,7 @@ export default async function PartnerCalendarPage(props: { params: Promise<{ dom
         <p className="text-muted-foreground text-sm">Gestiona tus reservas y visualiza las citas agendadas por la Inteligencia Artificial.</p>
       </header>
 
-      <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8">
+      <div className="zen-card p-8">
         {(!appointments || appointments.length === 0) ? (
           <div className="text-center py-20 text-white/40">
             <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />

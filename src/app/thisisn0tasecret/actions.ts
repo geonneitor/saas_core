@@ -6,6 +6,14 @@ import { requireSuperAdmin } from '@/lib/auth/super-admin';
 import { revalidatePath } from 'next/cache';
 
 export async function createTenant(formData: FormData) {
+  const clientSupabase = await createClient();
+  try {
+    await requireSuperAdmin(clientSupabase);
+  } catch (e) {
+    console.error('[createTenant] Auth failed:', e);
+    return;
+  }
+
   const supabase = createAdminClient();
   const name = formData.get('name') as string;
   const rawSubdomain = formData.get('subdomain') as string;

@@ -24,14 +24,6 @@ export function PublicNavbar() {
         ) : (
           <Link href="/" className="hover:text-white transition-colors">← Volver</Link>
         )}
-        <span className="w-px h-3 bg-white/20 self-center" />
-        <Link href="/login" className="hover:text-[#ff0055] transition-colors">Sign in</Link>
-        <Link
-          href="/hq"
-          className="text-[#ff0055] hover:text-white transition-colors"
-        >
-          HQ ↗
-        </Link>
       </nav>
     </header>
   )

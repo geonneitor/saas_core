@@ -52,7 +52,7 @@ export default async function ConsoleCustomersPage(props: { params: Promise<{ do
         </div>
       </header>
 
-      <div className="bg-black/20 border border-white/5 rounded-3xl overflow-hidden card-depth">
+      <div className="zen-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-white/[0.02] border-b border-white/5 text-white/40 uppercase tracking-widest text-[10px] font-bold">

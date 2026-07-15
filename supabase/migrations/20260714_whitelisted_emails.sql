@@ -74,6 +74,14 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
+  -- Security check: a user can only check their own email, unless they are a super admin
+  IF check_email != auth.jwt() ->> 'email' AND NOT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'super_admin'
+  ) THEN
+    RAISE EXCEPTION 'Access Denied: You can only check your own whitelist status';
+  END IF;
+
   RETURN EXISTS (
     SELECT 1 FROM public.whitelisted_emails 
     WHERE email = check_email AND is_active = TRUE
