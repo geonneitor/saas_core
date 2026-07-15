@@ -30,6 +30,19 @@ export default async function proxy(req: NextRequest) {
   // Ruta original que el usuario pidió (ej: "/", "/reservar", "/admin")
   const path = url.pathname;
 
+  // 0. BLOQUEO DE BOTS Y SCANNERS (Seguridad y ahorro de DB)
+  // Ignorar peticiones a archivos de configuración, wp-admin, php, etc.
+  if (
+    path.match(/\.(php|yaml|yml|sql|env|ini|xml|toml|json|txt|md|bak|swp)$/i) || 
+    path.includes('/administrator') || 
+    path.includes('/wp-') || 
+    path.includes('/magento') ||
+    path.includes('.git')
+  ) {
+    console.log(`[PROXY] Blocked bot request: ${hostname}${path}`);
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   let response: NextResponse;
   let isAdminApp = false;
   let isSuperAdminApp = false;

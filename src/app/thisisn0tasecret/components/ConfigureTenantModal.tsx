@@ -86,8 +86,8 @@ export function ConfigureTenantModal({ tenantId, tenantName }: ConfigureTenantMo
             <AutoConfigWizard
               tenantId={tenantId}
               tenantName={tenantName}
-              onComplete={() => {
-                // El wizard ya maneja su propio timeout de 1.5s antes de llamar onComplete
+              onCompleteAction={() => {
+                // El wizard ya maneja su propio timeout de 1.5s antes de llamar onCompleteAction
                 setIsOpen(false);
               }}
             />

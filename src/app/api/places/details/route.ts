@@ -21,32 +21,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const fields = [
-      'name',
-      'formatted_address',
-      'international_phone_number',
-      'opening_hours',
-      'website',
-      'geometry',
-      'rating',
-      'photos',
-    ].join(',');
+    const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Goog-Api-Key': GOOGLE_API_KEY,
+        'X-Goog-FieldMask': 'id,displayName,formattedAddress,internationalPhoneNumber,regularHours,websiteUri,location,rating,photos'
+      }
+    });
 
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&language=es&key=${GOOGLE_API_KEY}`;
-
-    const response = await fetch(url);
     const data = await response.json();
 
-    if (data.status !== 'OK') {
-      console.error('[Places Details] Google API error:', data.status, data.error_message);
+    if (!response.ok) {
+      console.error('[Places Details] Google API error:', data);
       return NextResponse.json(
-        { error: 'Error al obtener detalles del lugar', detail: data.status },
+        { error: 'Error al obtener detalles del lugar', detail: data.error?.message || 'Unknown error' },
         { status: 502 }
       );
     }
 
-    const place = data.result;
-    const weekdayText = place.opening_hours?.weekday_text || [];
+    const place = data;
+    const weekdayText = place.regularHours?.weekdayDescriptions || [];
 
     // Extraer opening_time y closing_time del primer día hábil
     let openingTime = '09:00';
@@ -63,20 +58,20 @@ export async function POST(req: Request) {
     // Obtener foto de referencia si existe
     let photoRef = null;
     if (place.photos && place.photos.length > 0) {
-      photoRef = place.photos[0].photo_reference;
+      photoRef = place.photos[0].name;
     }
 
     const result = {
-      name: place.name || '',
-      address: place.formatted_address || '',
-      phone: place.international_phone_number || '',
-      website: place.website || '',
+      name: place.displayName?.text || '',
+      address: place.formattedAddress || '',
+      phone: place.internationalPhoneNumber || '',
+      website: place.websiteUri || '',
       rating: place.rating || null,
       openingTime,
       closingTime,
       hoursRaw: weekdayText,
-      latitude: place.geometry?.location?.lat || null,
-      longitude: place.geometry?.location?.lng || null,
+      latitude: place.location?.latitude || null,
+      longitude: place.location?.longitude || null,
       photoRef: null, // No exponer API key al cliente por ahora
     };
 

@@ -13,16 +13,19 @@ export default function AiAssistantChat({
   tenantName,
   aiAvatar = 'lotito',
   tagline = 'Darte el mejor servicio.',
-  isAdmin = false
+  isAdmin = false,
+  initialMessage
 }: { 
   tenantId: string; 
   tenantName: string;
   aiAvatar?: AvatarVariant;
   tagline?: string;
   isAdmin?: boolean;
+  initialMessage?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const initialText = `¡Hola! Soy el asistente IA de ${tenantName}. ✨\n\nNuestra promesa: ${tagline}\n\nPuedo ayudarte a:\n📅 Agendar citas en segundos\n⏰ Consultar nuestros horarios\n❓ Resolver cualquier duda sobre los servicios\n\n¿Qué te gustaría hacer hoy?`;
+  const fallbackText = `¡Hola! Soy el asistente IA de ${tenantName}. ✨\n\nNuestra promesa: ${tagline}\n\nPuedo ayudarte a:\n📅 Agendar citas en segundos\n⏰ Consultar nuestros horarios\n❓ Resolver cualquier duda sobre los servicios\n\n¿Qué te gustaría hacer hoy?`;
+  const initialText = initialMessage || fallbackText;
   
   const [messages, setMessages] = useState<{role: string, text: string}[]>([
     { role: 'assistant', text: initialText }
@@ -131,7 +134,9 @@ export default function AiAssistantChat({
       });
       const data = await res.json();
       
-      if (data.reply) {
+      if (!res.ok || data.error) {
+        setMessages(prev => [...prev, { role: 'assistant', text: `[Error del Servidor] ${data.error || 'No se pudo conectar con la IA.'}` }]);
+      } else if (data.reply) {
         setMessages(prev => [...prev, { role: 'assistant', text: data.reply }]);
       }
       

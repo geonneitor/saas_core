@@ -21,26 +21,37 @@ export async function POST(req: Request) {
       );
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' México')}&language=es&key=${GOOGLE_API_KEY}`;
+    const url = 'https://places.googleapis.com/v1/places:searchText';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.types,places.location'
+      },
+      body: JSON.stringify({
+        textQuery: query + ' México',
+        languageCode: 'es'
+      })
+    });
 
-    const response = await fetch(url);
     const data = await response.json();
 
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('[Places Search] Google API error:', data.status, data.error_message);
+    if (!response.ok) {
+      console.error('[Places Search] Google API error:', data);
       return NextResponse.json(
-        { error: 'Error al buscar en Google Maps', detail: data.status },
+        { error: 'Error al buscar en Google Maps', detail: data.error?.message || 'Unknown error' },
         { status: 502 }
       );
     }
 
-    const results = (data.results || []).slice(0, 5).map((place: any) => ({
-      placeId: place.place_id,
-      name: place.name,
-      address: place.formatted_address,
+    const results = (data.places || []).slice(0, 5).map((place: any) => ({
+      placeId: place.id,
+      name: place.displayName?.text,
+      address: place.formattedAddress,
       rating: place.rating || null,
       types: place.types || [],
-      location: place.geometry?.location || null,
+      location: place.location ? { lat: place.location.latitude, lng: place.location.longitude } : null,
     }));
 
     return NextResponse.json({ results });

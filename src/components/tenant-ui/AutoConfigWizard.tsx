@@ -34,11 +34,11 @@ type Step = 'search' | 'review' | 'saving' | 'done';
 export function AutoConfigWizard({ 
   tenantId, 
   tenantName,
-  onComplete 
+  onCompleteAction 
 }: { 
   tenantId: string;
   tenantName: string;
-  onComplete?: () => void;
+  onCompleteAction?: () => void;
 }) {
   const [step, setStep] = useState<Step>('search');
   const [query, setQuery] = useState('');
@@ -175,7 +175,7 @@ Ayuda a los clientes a agendar citas de manera profesional y amable.`,
 
         setStep('done');
         setTimeout(() => {
-          onComplete?.();
+          onCompleteAction?.();
         }, 1500);
       } catch (e) {
         console.error('Error saving config:', e);

@@ -50,6 +50,7 @@ export default function LandingPage() {
           tenantName="debugGeo"
           aiAvatar="error404"
           tagline="Resolviendo problemas complejos. La IA hace exactamente lo que necesitas. *Beep boop*"
+          initialMessage="¡Hola! Soy debugGeo, el IA Concierge de ventas de Geo-Dev. 🤖✨\n\nEstoy aquí para responder cualquier pregunta sobre nuestra plataforma SaaS para negocios.\n\n¿En qué te puedo ayudar hoy?"
         />
       </div>
     </div>
