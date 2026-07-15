@@ -93,12 +93,18 @@ export async function updateSession(
     const { isSuperAdmin: checkIsSuperAdmin } = await import('@/lib/auth/super-admin');
     const isSuperAdmin = await checkIsSuperAdmin(supabase, user?.id || null);
 
-    // Si hay user, validar que sea el email autorizado
+    // Si hay user, pero NO es super_admin: cerrar sesión para romper el bucle
     if (user && !isSuperAdmin) {
+      await supabase.auth.signOut()
       const unauthorizedUrl = request.nextUrl.clone()
       unauthorizedUrl.pathname = '/login'
       unauthorizedUrl.searchParams.set('error', 'unauthorized')
-      return NextResponse.redirect(unauthorizedUrl)
+      
+      const redirectResponse = NextResponse.redirect(unauthorizedUrl)
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      })
+      return redirectResponse
     }
 
     // Si ya está logueado y es superadmin, no dejarlo ir al /login del superadmin

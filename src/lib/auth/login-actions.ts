@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { getAppUrl } from '@/lib/utils';
 
 export type AuthFormState = { error?: string; success?: string } | undefined;
 
@@ -52,10 +53,13 @@ export async function sendMagicLinkAction(
 
   const supabase = await createClient();
   
+  // Construir URL absoluta con protocolo para que Supabase genere un magic link válido
+  const redirectUrl = getAppUrl('/auth/callback');
+  
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'http://localhost:3000'}/auth/callback`,
+      emailRedirectTo: redirectUrl,
     },
   });
 

@@ -110,7 +110,7 @@ export default async function ConsoleBillingPage(props: {
                     <Sparkles className="w-3.5 h-3.5" /> Incluye 50% extra de Tokens en 1ra recarga
                   </p>
                   <StripeCheckoutButton 
-                    priceId="price_setup_advance" 
+                    moduleId="setup_advance" 
                     tenantId={tenant.id} 
                     className="w-full btn-premium-gold px-4 py-3 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-gold-primary/20"
                     text="Pagar Adelanto ($600 MXN)"
@@ -134,7 +134,7 @@ export default async function ConsoleBillingPage(props: {
                   </div>
                 </div>
                 <StripeCheckoutButton 
-                  priceId={isAdvancePaid ? "price_setup_balance" : "price_setup_full"} 
+                  moduleId={isAdvancePaid ? "setup_balance" : "setup_full"} 
                   tenantId={tenant.id} 
                   className={`w-full px-4 py-3 rounded-xl font-bold uppercase tracking-widest text-xs ${isAdvancePaid || !isTrialActive ? 'btn-premium-gold shadow-lg shadow-gold-primary/20' : 'bg-white/10 text-white hover:bg-white/20'}`}
                   text="Liquidar Software"

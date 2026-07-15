@@ -65,14 +65,20 @@ export default function SuperAdminLayout({
             <LayoutDashboard size={18} />
             Tenants
           </a>
-          <a
-            href="/thisisn0tasecret#config"
-            className="flex items-center gap-3 text-sm px-4 py-2.5 rounded-md transition-all"
+          <span
+            className="flex items-center gap-3 text-sm px-4 py-2.5 rounded-md transition-all opacity-40 cursor-not-allowed"
             style={{ color: 'var(--acid-text-dim)' }}
+            title="Próximamente"
           >
             <Settings size={16} />
             System Config
-          </a>
+            <span 
+              className="text-[8px] uppercase tracking-widest ml-auto"
+              style={{ color: 'var(--acid-warn)' }}
+            >
+              Soon
+            </span>
+          </span>
         </nav>
 
         <div

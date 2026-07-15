@@ -37,18 +37,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
 
-    // Catálogo de precios por defecto (evita inyección de precios)
-    const MODULE_PRICES: Record<string, number> = {
-      'tokens_10k': 10,
-      'tokens_50k': 45,
-      'tokens_200k': 150,
-      'core': 0, // No debería comprarse
-    };
-    
-    // Si no está en el mapa, asume módulo premium genérico
-    const price = MODULE_PRICES[moduleId] !== undefined ? MODULE_PRICES[moduleId] : 149;
+    // Catálogo de precios SERVER-SIDE (evita inyección de precios desde el cliente).
+    // Cada entrada define precio, moneda y título para la sesión de Stripe.
+    const MODULE_CATALOG: Record<string, { price: number; currency: 'mxn' | 'usd'; title: string }> = {
+      // --- Token packs desde WalletDashboard (MXN) ---
+      'tokens_5k':  { price: 150,  currency: 'mxn', title: 'Pack Inicial 5,000 Tokens' },
+      'tokens_15k': { price: 350,  currency: 'mxn', title: 'Pack Crecimiento 15,000 Tokens' },
+      'tokens_35k': { price: 750,  currency: 'mxn', title: 'Pack Enterprise 35,000 Tokens' },
 
-    if (price <= 0) {
+      // --- Token packs desde Store (USD — compatibilidad hacia atrás) ---
+      'tokens_10k':  { price: 10,   currency: 'usd', title: 'Pack 10,000 Tokens' },
+      'tokens_50k':  { price: 45,   currency: 'usd', title: 'Pack 50,000 Tokens' },
+      'tokens_200k': { price: 150,  currency: 'usd', title: 'Pack 200,000 Tokens' },
+
+      // --- Módulos del Store (USD — compatibilidad hacia atrás) ---
+      'whatsapp':  { price: 149, currency: 'usd', title: 'WhatsApp Autopilot' },
+      'pos':       { price: 99,  currency: 'usd', title: 'Terminal POS' },
+      'analytics': { price: 49,  currency: 'usd', title: 'Analytics Avanzado' },
+
+      // --- Setup fee (MXN) ---
+      'setup_advance': { price: 600,  currency: 'mxn', title: 'Adelanto 30% — Instalación' },
+      'setup_balance': { price: 1399, currency: 'mxn', title: 'Liquidación Restante' },
+      'setup_full':    { price: 1999, currency: 'mxn', title: 'Pago de Contado — Instalación' },
+    } as const;
+    
+    const entry = MODULE_CATALOG[moduleId];
+    if (!entry || entry.price <= 0) {
       return NextResponse.json({ error: 'Módulo no válido para compra' }, { status: 400 });
     }
 
@@ -69,8 +83,15 @@ export async function POST(req: Request) {
         ? `http://${tenant.subdomain}.localhost:3000`
         : `https://${tenant.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`);
 
-    const successUrl = `${origin}/console/store?success=true&module=${moduleId}`;
-    const cancelUrl = `${origin}/console/store?canceled=true`;
+
+
+    // Redirigir post-pago según el tipo de compra
+    const isTokenPurchase = moduleId.startsWith('tokens_');
+    const postPaymentOrigin = isTokenPurchase
+      ? origin + '/console/billing'
+      : origin + '/console/store';
+    const successUrl = `${postPaymentOrigin}?success=true&module=${moduleId}`;
+    const cancelUrl = `${postPaymentOrigin}?canceled=true`;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -78,12 +99,12 @@ export async function POST(req: Request) {
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: entry.currency,
             product_data: {
-              name: title || 'Módulo Premium',
-              description: `Desbloqueo de ${title || moduleId} — pago único`,
+              name: entry.title,
+              description: `Pago único — ${entry.title}`,
             },
-            unit_amount: Math.round(price * 100), // Stripe expects cents
+            unit_amount: Math.round(entry.price * 100), // Stripe expects cents/centavos
           },
           quantity: 1,
         },

@@ -79,16 +79,6 @@ export function PublicHero() {
         </Link>
       </motion.div>
 
-      {/* Sign-in micro-CTA */}
-      <motion.div variants={item}>
-        <Link
-          href="/login"
-          className="text-[10px] uppercase tracking-[0.3em] text-neutral-600 hover:text-neutral-300 transition-colors"
-        >
-          ¿Ya tienes cuenta?{' '}
-          <span className="text-[#ff0055]">Sign in →</span>
-        </Link>
-      </motion.div>
     </motion.div>
   );
 }

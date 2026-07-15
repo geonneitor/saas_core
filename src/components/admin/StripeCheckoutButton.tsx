@@ -5,14 +5,14 @@ import { motion } from 'framer-motion';
 import { CreditCard, Loader2, ShieldCheck, ExternalLink } from 'lucide-react';
 
 interface StripeCheckoutButtonProps {
-  priceId: string;
+  moduleId: string;
   tenantId: string;
   text?: string;
   className?: string;
 }
 
 export default function StripeCheckoutButton({
-  priceId,
+  moduleId,
   tenantId,
   text = 'Pagar Ahora',
   className,
@@ -27,7 +27,7 @@ export default function StripeCheckoutButton({
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, tenantId, returnUrl: window.location.href }),
+        body: JSON.stringify({ moduleId, tenantId }),
       });
       const data = await res.json();
       if (!res.ok) {

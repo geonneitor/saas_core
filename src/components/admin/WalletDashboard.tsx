@@ -16,9 +16,9 @@ export default function WalletDashboard({ tokensUsed, tokensLimit, tenantId, has
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
 
   const packages = [
-    { id: 'price_tokens_150', tokens: 5000, price: 150, popular: false },
-    { id: 'price_tokens_350', tokens: 15000, price: 350, popular: true },
-    { id: 'price_tokens_750', tokens: 35000, price: 750, popular: false },
+    { id: 'tokens_5k', tokens: 5000, price: 150, popular: false },
+    { id: 'tokens_15k', tokens: 15000, price: 350, popular: true },
+    { id: 'tokens_35k', tokens: 35000, price: 750, popular: false },
   ];
 
   const remainingTokens = Math.max(0, tokensLimit - tokensUsed);
@@ -105,7 +105,7 @@ export default function WalletDashboard({ tokensUsed, tokensLimit, tenantId, has
         <div className="mt-8 flex justify-end">
           {selectedPackage ? (
             <StripeCheckoutButton 
-              priceId={selectedPackage} 
+              moduleId={selectedPackage} 
               tenantId={tenantId}
               text="Pagar Recarga"
               className="btn-premium-gold px-8 py-3 rounded-full flex items-center gap-2"

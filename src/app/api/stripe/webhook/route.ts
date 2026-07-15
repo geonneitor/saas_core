@@ -57,10 +57,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // 2. Procesar según tipo de compra
-    if (moduleId.startsWith('tokens_')) {
+    // 2. Procesar según tipo de compra      // Setup fee moduleIds - actualizar estado de pago, no active_modules
+    if (moduleId === 'setup_advance' || moduleId === 'setup_balance' || moduleId === 'setup_full') {
+      const updates: Record<string, boolean> = {};
+
+      if (moduleId === 'setup_advance') {
+        // Adelanto parcial — solo marcar advance_paid, NO setup_fee_paid
+        updates.setup_advance_paid = true;
+      } else {
+        // setup_balance o setup_full — marcar como completamente pagado
+        updates.setup_fee_paid = true;
+        if (moduleId === 'setup_full') {
+          // Pago completo implica que el adelanto también está cubierto
+          updates.setup_advance_paid = true;
+        }
+      }
+
+      const { error } = await supabase
+        .from('tenants')
+        .update(updates)
+        .eq('id', tenantId);
+
+      if (error) {
+        console.error(`[STRIPE WEBHOOK] Error actualizando setup fee:`, error.message);
+      } else {
+        console.log(`[STRIPE WEBHOOK] ✅ Setup fee "${moduleId}" procesado para tenant ${tenantId}.`);
+      }
+    } else if (moduleId.startsWith('tokens_')) {
       // Recarga de tokens de IA
       const tokenMap: Record<string, number> = {
+        // WalletDashboard packs (MXN)
+        tokens_5k: 5000,
+        tokens_15k: 15000,
+        tokens_35k: 35000,
+        // Store packs (USD — compatibilidad hacia atrás)
         tokens_10k: 10000,
         tokens_50k: 50000,
         tokens_200k: 200000,

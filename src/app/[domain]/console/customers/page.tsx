@@ -2,8 +2,14 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { User, Users, Clock, Search } from 'lucide-react';
 
-export default async function ConsoleCustomersPage(props: { params: Promise<{ domain: string }> }) {
+export default async function ConsoleCustomersPage(props: { 
+  params: Promise<{ domain: string }>;
+  searchParams: Promise<{ q?: string }>;
+}) {
   const { domain } = await props.params;
+  const { q } = await props.searchParams;
+  const searchQuery = (q || '').trim();
+  
   const supabase = await createClient();
 
   const { data: tenant } = await supabase
@@ -14,10 +20,17 @@ export default async function ConsoleCustomersPage(props: { params: Promise<{ do
 
   if (!tenant) notFound();
 
-  const { data: customers } = await supabase
+  let query = supabase
     .from('customers')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .eq('tenant_id', tenant.id);
+
+  // Server-side filtering by name or phone
+  if (searchQuery) {
+    query = query.or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`);
+  }
+
+  const { data: customers } = await query
     .order('created_at', { ascending: false });
 
   const colors = [
@@ -42,15 +55,36 @@ export default async function ConsoleCustomersPage(props: { params: Promise<{ do
             Gestión de pacientes, comensales o visitantes que han interactuado con la IA o agendado citas.
           </p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+        
+        {/* Functional search via GET form — submit con Enter o click en el Search icon */}
+        <form method="GET" className="relative">
+          <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 p-0 border-none bg-transparent cursor-pointer">
+            <Search className="w-4 h-4 text-white/40 hover:text-white/80 transition-colors" />
+          </button>
           <input 
+            name="q"
             type="text" 
+            defaultValue={searchQuery}
             placeholder="Buscar por nombre o teléfono..." 
-            className="w-full md:w-64 pl-10 pr-4 py-2 bg-black/40 border border-white/10 rounded-full text-sm focus:outline-none focus:border-gold-primary/50 transition-colors"
+            className="w-full md:w-64 pl-10 pr-8 py-2 bg-black/40 border border-white/10 rounded-full text-sm focus:outline-none focus:border-gold-primary/50 transition-colors"
           />
-        </div>
+          {searchQuery && (
+            <a
+              href="/console/customers"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white/80 transition-colors"
+              title="Limpiar búsqueda"
+            >
+              ✕
+            </a>
+          )}
+        </form>
       </header>
+
+      {searchQuery && (
+        <p className="text-xs text-muted-foreground">
+          Resultados para &ldquo;{searchQuery}&rdquo; — {customers?.length || 0} cliente{customers?.length !== 1 ? 's' : ''} encontrado{customers?.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       <div className="zen-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -94,8 +128,14 @@ export default async function ConsoleCustomersPage(props: { params: Promise<{ do
                 <tr>
                   <td colSpan={3} className="px-8 py-16 text-center text-white/30">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p className="font-medium">No hay clientes registrados aún.</p>
-                    <p className="text-xs mt-1">La IA registrará automáticamente a las personas que agenden.</p>
+                    <p className="font-medium">
+                      {searchQuery ? 'No se encontraron clientes con ese criterio.' : 'No hay clientes registrados aún.'}
+                    </p>
+                    <p className="text-xs mt-1">
+                      {searchQuery 
+                        ? 'Intenta con otro nombre o número de teléfono.' 
+                        : 'La IA registrará automáticamente a las personas que agenden.'}
+                    </p>
                   </td>
                 </tr>
               )}
