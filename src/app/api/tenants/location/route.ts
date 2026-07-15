@@ -39,13 +39,29 @@ export async function POST(req: Request) {
     if (closingTime) updateData.closing_time = closingTime;
     // Nota: 'address' no está en business_settings, se omite por ahora
 
-    const { error } = await admin
+    // Upsert: check if row exists first, then update or insert
+    const { data: existing } = await admin
       .from('business_settings')
-      .update(updateData)
-      .eq('tenant_id', tenantId);
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
 
-    if (error) {
-      console.error('[Location Update] Error:', error);
+    let queryError;
+    if (existing) {
+      const res = await admin
+        .from('business_settings')
+        .update(updateData)
+        .eq('tenant_id', tenantId);
+      queryError = res.error;
+    } else {
+      const res = await admin
+        .from('business_settings')
+        .insert({ tenant_id: tenantId, ...updateData });
+      queryError = res.error;
+    }
+
+    if (queryError) {
+      console.error('[Location Update] Error:', queryError);
       return NextResponse.json({ error: 'Error al actualizar ubicación' }, { status: 500 });
     }
 

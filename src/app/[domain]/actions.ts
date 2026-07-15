@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 
@@ -27,7 +28,8 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
   }
   
   try {
-    const { data: existing } = await supabase
+    const admin = createAdminClient();
+    const { data: existing } = await admin
       .from('business_settings')
       .select('id')
       .eq('tenant_id', tenantId)
@@ -35,10 +37,10 @@ export async function updateAiSettings(tenantId: string, data: { ai_avatar?: str
 
     let error;
     if (existing) {
-      const res = await supabase.from('business_settings').update(data).eq('tenant_id', tenantId).select();
+      const res = await admin.from('business_settings').update(data).eq('tenant_id', tenantId).select();
       error = res.error;
     } else {
-      const res = await supabase.from('business_settings').insert({ tenant_id: tenantId, ...data }).select();
+      const res = await admin.from('business_settings').insert({ tenant_id: tenantId, ...data }).select();
       error = res.error;
     }
 
@@ -75,7 +77,24 @@ export async function updateVisualSettings(tenantId: string, data: { theme?: str
   }
   
   try {
-    const { error } = await supabase.from('business_settings').update(data).eq('tenant_id', tenantId);
+    const admin = createAdminClient();
+
+    // Upsert: check if row exists first
+    const { data: existing } = await admin
+      .from('business_settings')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      const res = await admin.from('business_settings').update(data).eq('tenant_id', tenantId);
+      error = res.error;
+    } else {
+      const res = await admin.from('business_settings').insert({ tenant_id: tenantId, ...data });
+      error = res.error;
+    }
+
     if (error) throw error;
     
     revalidatePath('/', 'layout');
