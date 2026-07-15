@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       method: 'GET',
       headers: {
         'X-Goog-Api-Key': GOOGLE_API_KEY,
-        'X-Goog-FieldMask': 'id,displayName,formattedAddress,internationalPhoneNumber,regularHours,websiteUri,location,rating,photos'
+        'X-Goog-FieldMask': 'id,displayName,formattedAddress,internationalPhoneNumber,regularHours,websiteUri,location,rating,photos',
+        'Referer': process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : 'http://localhost:3000'
       }
     });
 

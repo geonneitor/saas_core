@@ -61,12 +61,12 @@ export default async function proxy(req: NextRequest) {
   else if (
     hostname === rootDomain || 
     hostname === `www.${rootDomain}` ||
-    hostname.endsWith('.vercel.app') // Vercel direct links
+    hostname.endsWith('.vercel.app') || // Vercel direct links
+    hostname === 'localhost' // Para pruebas locales
   ) {
     // Es la app principal, no reescribimos nada fuera de lo normal
-    const finalPath = path;
-    console.log(`[PROXY] Rewriting MAIN LANDING request for ${hostname}${path} -> ${finalPath}`);
-    response = NextResponse.rewrite(new URL(finalPath, req.url));
+    console.log(`[PROXY] Passing through MAIN LANDING request for ${hostname}${path}`);
+    response = NextResponse.next();
   } 
   // 3. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
   else {
