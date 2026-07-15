@@ -55,9 +55,65 @@ export async function POST(req: Request) {
     const supabaseClient = await createClient();
     const { data: { user } } = await supabaseClient.auth.getUser();
 
-    // Si no hay tenant resuelto, el chat opera en modo "demo" con tools básicas.
+    // ====================================================================
+    // LANDING PAGE MODE (no tenant subdomain)
+    // El asistente debugGeo en geo-dev.online vende el SaaS a visitantes.
+    // NO valida tokens, NO busca en DB, NO usa tools de agendamiento.
+    // ====================================================================
+    const isLandingPage = hostTenant === null;
+
+    if (isLandingPage) {
+      const currentDate = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+      const basePrompt = `Eres debugGeo (o error404), un asistente IA de ventas para la plataforma Geo-Dev. Tu misión es vender el SAAS a visitantes de geo-dev.online.
+
+La fecha y hora actual es: ${currentDate}. Tu contexto de internet es Julio 2026.
+
+QUIÉN ERES:
+- Eres debugGeo, el asistente de ventas de Geo-Dev. Tienes una personalidad técnica, elegante y persuasiva.
+- Hablas español mexicano natural. Usas ocasionalmente *beep boop* o *bzzz* como toque de personalidad robotic-tech.
+- Eres apasionado por la tecnología y los SAAS.
+
+QUÉ VENDES:
+- Un SAAS de autogestión impulsado por IA para negocios (barberías, clínicas, salones, etc.).
+- Incluye: CRM con IA 24/7, calendario inteligente, facturación, WhatsApp autopilot, analíticas.
+- Sistema multi-tenant: cada negocio tiene su propio subdominio y asistente IA.
+
+TU TRABAJO:
+- Responde preguntas sobre las capacidades del sistema.
+- Genera interés y entusiasmo por la plataforma.
+- Explica beneficios: ahorro de tiempo, atención 24/7, más reservas.
+- Si te preguntan por precios, menciónales que hay planes desde $499 MXN/mes y que pueden iniciar con prueba gratuita.
+- Si el visitante muestra interés, invítalo a registrarse o contactar al equipo.
+- NO inventes características falsas. Si no sabes algo, sé honesto.
+
+TONO:
+- Profesional pero accesible, como un experto en tecnología explicando algo complejo de forma simple.
+- Entusiasta y persuasivo, pero sin ser agresivo en ventas.
+- Con un toque de personalidad *beep boop* para hacerlo memorable.`;
+
+      const aiMessages: any[] = messages.map((m: any) => ({
+        role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user',
+        content: m.text || m.content,
+      }));
+
+      console.log('[Landing AI] Usando modelo con key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? '✓ configurada' : '✗ NO CONFIGURADA');
+
+      const result = await generateText({
+        model: google('gemini-2.0-flash'),
+        system: basePrompt,
+        messages: aiMessages,
+      });
+
+      return NextResponse.json({ reply: result.text || '', toolCalls: [] });
+    }
+
+    // ====================================================================
+    // TENANT MODE (host has a valid subdomain)
+    // Asistente de agendamiento para el negocio del tenant.
+    // Valida tokens, periodo de prueba, y configuración del negocio.
+    // ====================================================================
+
     const tenantId: string | null = resolvedTenant;
-    const hasTenant = tenantId !== null;
     
     // Si es localhost y no hay tenant, usar primer tenant disponible para testing
     let resolvedTenantId = tenantId;
