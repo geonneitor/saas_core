@@ -8,6 +8,7 @@ import { UpdateTokenLimitForm } from "./UpdateTokenLimitForm"
 import { DeleteTenantForm } from "./DeleteTenantForm"
 import { ConfigureTenantModal } from "./ConfigureTenantModal"
 import { deleteTenant } from "../actions"
+import { AssignAgentForm } from "./AssignAgentForm"
 
 interface TenantsDirectoryTableProps {
   // [16726] Tipos estrictos (Sprint 3.3)
@@ -18,12 +19,14 @@ interface TenantsDirectoryTableProps {
     is_active: boolean;
     ai_token_limit?: number;
     ai_tokens_used?: number;
+    agent_id?: string | null;
     business_settings?: { whatsapp_number?: string; latitude?: number; longitude?: number }[];
   }[];
   mapsApiKey: string;
+  agents?: { id: string; email?: string }[];
 }
 
-export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryTableProps) {
+export function TenantsDirectoryTable({ tenants, mapsApiKey, agents }: TenantsDirectoryTableProps) {
   return (
     <Card 
       className="border-brutal rounded-none"
@@ -114,6 +117,9 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
                           apiKey={mapsApiKey} 
                         />
                       )}
+                    </div>
+                    <div className="mt-2">
+                      <AssignAgentForm tenantId={tenant.id} currentAgentId={tenant.agent_id} agents={agents} />
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

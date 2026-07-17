@@ -72,3 +72,61 @@ export async function updateTokenLimit(formData: FormData) {
   
   revalidatePath('/thisisn0tasecret');
 }
+
+export async function promoteUserToAgent(formData: FormData) {
+  const supabase = await createClient();
+  try {
+    await requireSuperAdmin(supabase);
+  } catch (e) {
+    console.error('[promoteUserToAgent] Auth failed:', e);
+    return { error: 'No autorizado' };
+  }
+
+  const email = formData.get('email') as string;
+  if (!email) return { error: 'Email requerido' };
+
+  const adminSupabase = createAdminClient();
+
+  // Find user by email
+  const { data: usersData, error: listError } = await adminSupabase.auth.admin.listUsers();
+  if (listError) return { error: 'Error al listar usuarios' };
+
+  const user = usersData.users.find((u) => u.email === email);
+  if (!user) return { error: 'Usuario no encontrado. Asegúrate de que ya se haya registrado.' };
+
+  // Update profile
+  const { error: updateError } = await adminSupabase
+    .from('profiles')
+    .update({ role: 'agent' })
+    .eq('id', user.id);
+
+  if (updateError) return { error: 'Error al actualizar perfil' };
+
+  revalidatePath('/thisisn0tasecret');
+  return { success: true };
+}
+
+export async function assignAgentToTenant(formData: FormData) {
+  const supabase = await createClient();
+  try {
+    await requireSuperAdmin(supabase);
+  } catch (e) {
+    console.error('[assignAgentToTenant] Auth failed:', e);
+    return { error: 'No autorizado' };
+  }
+
+  const tenantId = formData.get('tenantId') as string;
+  const agentId = formData.get('agentId') as string; // if empty string, we set to null
+
+  const adminSupabase = createAdminClient();
+  
+  const { error } = await adminSupabase
+    .from('tenants')
+    .update({ agent_id: agentId ? agentId : null } as any)
+    .eq('id', tenantId);
+
+  if (error) return { error: 'Error al asignar agente' };
+
+  revalidatePath('/thisisn0tasecret');
+  return { success: true };
+}
