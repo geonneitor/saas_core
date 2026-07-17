@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=auth-code-error', request.url))
   }
   
-  // Verificar si es super_admin para ir al HQ
+  // Verificar el rol del usuario (super_admin o agent)
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -33,13 +33,18 @@ export async function GET(request: Request) {
     .maybeSingle()
   
   const isSuperAdmin = profile?.role === 'super_admin'
+  const isAgent = profile?.role === 'agent'
   const baseUrl = getAppUrl()
   
   if (isSuperAdmin) {
     return NextResponse.redirect(`${baseUrl}/thisisn0tasecret`)
   }
+
+  if (isAgent) {
+    return NextResponse.redirect(`${baseUrl}/agent`)
+  }
   
-  // Si no es super_admin, redirigir al console de su tenant (si tiene uno)
+  // Si no es super_admin ni agent, redirigir al console de su tenant (si tiene uno)
   const { data: tenant } = await supabase
     .from('tenants')
     .select('subdomain')
