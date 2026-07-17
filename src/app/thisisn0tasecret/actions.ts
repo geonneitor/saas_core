@@ -82,23 +82,40 @@ export async function promoteUserToAgent(formData: FormData) {
     return { error: 'No autorizado' };
   }
 
-  const email = formData.get('email') as string;
+  const email = (formData.get('email') as string)?.trim().toLowerCase();
   if (!email) return { error: 'Email requerido' };
 
   const adminSupabase = createAdminClient();
 
-  // Find user by email
-  const { data: usersData, error: listError } = await adminSupabase.auth.admin.listUsers();
-  if (listError) return { error: 'Error al listar usuarios' };
+  // Find user by email (handling pagination if there are many users)
+  let targetUser = null;
+  let page = 1;
+  const perPage = 100; // Supabase limit is usually 1000, we use 100 to be safe
+  
+  while (!targetUser) {
+    const { data: usersData, error: listError } = await adminSupabase.auth.admin.listUsers({
+      page: page,
+      perPage: perPage
+    });
+    
+    if (listError) return { error: 'Error al listar usuarios en la BD' };
+    if (!usersData.users || usersData.users.length === 0) break; // no more users
 
-  const user = usersData.users.find((u) => u.email === email);
-  if (!user) return { error: 'Usuario no encontrado. Asegúrate de que ya se haya registrado.' };
+    targetUser = usersData.users.find((u) => u.email?.toLowerCase() === email);
+    
+    if (usersData.users.length < perPage) break; // last page reached
+    page++;
+  }
+
+  if (!targetUser) {
+    return { error: 'Usuario no encontrado. Asegúrate de que el correo esté escrito correctamente y que haya hecho clic en el magic link al menos una vez.' };
+  }
 
   // Update profile
   const { error: updateError } = await adminSupabase
     .from('profiles')
     .update({ role: 'agent' })
-    .eq('id', user.id);
+    .eq('id', targetUser.id);
 
   if (updateError) return { error: 'Error al actualizar perfil' };
 
