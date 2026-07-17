@@ -107,7 +107,8 @@ export async function inviteAgent(formData: FormData) {
   }
 
   if (!targetUserId) {
-    return { error: 'No se pudo crear ni encontrar la invitación para este usuario.' };
+    console.error('[inviteAgent] inviteError:', inviteError);
+    return { error: inviteError?.message || 'No se pudo crear ni encontrar la invitación para este usuario.' };
   }
 
   // Update profile to agent role (Supabase trigger usually creates the profile row instantly)
