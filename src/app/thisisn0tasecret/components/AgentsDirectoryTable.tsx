@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
-import { promoteUserToAgent } from "../actions"
+import { inviteAgent } from "../actions"
 
 interface AgentsDirectoryTableProps {
   agents: {
@@ -25,7 +25,7 @@ export function AgentsDirectoryTable({ agents }: AgentsDirectoryTableProps) {
   async function handlePromote(formData: FormData) {
     setLoading(true);
     setError('');
-    const res = await promoteUserToAgent(formData);
+    const res = await inviteAgent(formData);
     if (res?.error) {
       setError(res.error);
     }
@@ -56,7 +56,7 @@ export function AgentsDirectoryTable({ agents }: AgentsDirectoryTableProps) {
             {error && <span className="text-red-500 text-[10px]">{error}</span>}
           </div>
           <Button type="submit" disabled={loading} size="sm" className="bg-lime-400 text-black hover:bg-lime-500 font-mono">
-            {loading ? 'Ascendiendo...' : '+ Hacer Agente'}
+            {loading ? 'Enviando Invitación...' : '✉️ Invitar Agente'}
           </Button>
         </form>
       </CardHeader>

@@ -73,12 +73,12 @@ export async function updateTokenLimit(formData: FormData) {
   revalidatePath('/thisisn0tasecret');
 }
 
-export async function promoteUserToAgent(formData: FormData) {
+export async function inviteAgent(formData: FormData) {
   const supabase = await createClient();
   try {
     await requireSuperAdmin(supabase);
   } catch (e) {
-    console.error('[promoteUserToAgent] Auth failed:', e);
+    console.error('[inviteAgent] Auth failed:', e);
     return { error: 'No autorizado' };
   }
 
@@ -87,37 +87,39 @@ export async function promoteUserToAgent(formData: FormData) {
 
   const adminSupabase = createAdminClient();
 
-  // Find user by email (handling pagination if there are many users)
-  let targetUser = null;
-  let page = 1;
-  const perPage = 100; // Supabase limit is usually 1000, we use 100 to be safe
+  // Try to invite the user
+  const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email);
   
-  while (!targetUser) {
-    const { data: usersData, error: listError } = await adminSupabase.auth.admin.listUsers({
-      page: page,
-      perPage: perPage
-    });
-    
-    if (listError) return { error: 'Error al listar usuarios en la BD' };
-    if (!usersData.users || usersData.users.length === 0) break; // no more users
+  let targetUserId = inviteData?.user?.id;
 
-    targetUser = usersData.users.find((u) => u.email?.toLowerCase() === email);
-    
-    if (usersData.users.length < perPage) break; // last page reached
-    page++;
+  // If user already exists or invite fails, fallback to finding the user
+  if (!targetUserId) {
+    let page = 1;
+    const perPage = 100;
+    while (!targetUserId) {
+      const { data: usersData, error: listError } = await adminSupabase.auth.admin.listUsers({ page, perPage });
+      if (listError || !usersData.users || usersData.users.length === 0) break;
+      const found = usersData.users.find((u) => u.email?.toLowerCase() === email);
+      if (found) targetUserId = found.id;
+      if (usersData.users.length < perPage) break;
+      page++;
+    }
   }
 
-  if (!targetUser) {
-    return { error: 'Usuario no encontrado. Asegúrate de que el correo esté escrito correctamente y que haya hecho clic en el magic link al menos una vez.' };
+  if (!targetUserId) {
+    return { error: 'No se pudo crear ni encontrar la invitación para este usuario.' };
   }
 
-  // Update profile
+  // Update profile to agent role (Supabase trigger usually creates the profile row instantly)
   const { error: updateError } = await adminSupabase
     .from('profiles')
     .update({ role: 'agent' })
-    .eq('id', targetUser.id);
+    .eq('id', targetUserId);
 
-  if (updateError) return { error: 'Error al actualizar perfil' };
+  if (updateError) {
+    // If update fails, maybe the trigger hasn't fired yet, try an upsert
+    await adminSupabase.from('profiles').upsert({ id: targetUserId, role: 'agent' });
+  }
 
   revalidatePath('/thisisn0tasecret');
   return { success: true };
