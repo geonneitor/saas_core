@@ -118,7 +118,8 @@ export function AiSettingsForm({
                   className="sr-only" 
                 />
                 <div className="w-12 h-12 rounded-full border border-white/10 overflow-hidden shrink-0 flex items-center justify-center bg-black shadow-sm">
-                  <AvatarSystem variant={a.id as any} isActive={avatar === a.id} />
+                  {/* [16726] Tipos estrictos para AvatarSystem (Sprint 3.3) */}
+                  <AvatarSystem variant={a.id as "lotito" | "orb" | "cat" | "robot" | "star" | "error404"} isActive={avatar === a.id} />
                 </div>
                 <div>
                   <h4 className="font-bold text-foreground text-[15px]">{a.name}</h4>

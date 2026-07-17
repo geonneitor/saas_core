@@ -1,5 +1,9 @@
 'use client';
 
+// [16726] Migrado desde src/components/admin/StripeCheckoutButton.tsx a tenant-ui. 
+// Por qué: Cumplimiento de regla de arquitectura (Remoción de rutas legacy /admin).
+// Cómo: Movimiento atómico de archivo y actualización de importaciones.
+
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Loader2, ShieldCheck, ExternalLink } from 'lucide-react';

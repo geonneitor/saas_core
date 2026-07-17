@@ -15,6 +15,7 @@ import {
   getBusinessStats
 } from '@/lib/ai/tools';
 import { rateLimit } from '@/lib/rate-limit';
+import { getTokenBalance, setTokenBalance } from '@/lib/token-cache';
 import { resolveTenantFromHost, reconcileTenantId } from '@/lib/ai/tenant-resolver';
 
 export async function POST(req: Request) {
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
+
+    type GenerateTextMessages = Exclude<Parameters<typeof generateText>[0]['messages'], undefined>;
 
     const adminSupabase = createAdminClient();
     const supabaseClient = await createClient();
@@ -91,10 +94,10 @@ TONO:
 - Entusiasta y persuasivo, pero sin ser agresivo en ventas.
 - Con un toque de personalidad *beep boop* para hacerlo memorable.`;
 
-      const aiMessages: any[] = messages.map((m: any) => ({
-        role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user',
+      const aiMessages = messages.map((m: { sender?: string; role?: string; text?: string; content?: string }) => ({
+        role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user' as const,
         content: m.text || m.content,
-      }));
+      })) as GenerateTextMessages;
 
       console.log('[Landing AI] Usando modelo con key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? '✓ configurada' : '✗ NO CONFIGURADA');
 
@@ -133,15 +136,48 @@ TONO:
     let isAdmin = false;
     let dynamicContext = "";
     let basePrompt = "Eres un asistente virtual para clientes.";
-    let settings: any = null;
-    let tenantData: any = null;
+    let settings: Record<string, unknown> | null = null;
+    let tenantData: Record<string, unknown> | null = null;
 
     if (tenantId) {
       // 1. Obtener settings del negocio
       const { data: fetchedSettings } = await adminSupabase.from('business_settings').select('*').eq('tenant_id', tenantId).single();
       settings = fetchedSettings;
       
-      const { data: fetchedTenantData } = await adminSupabase.from('tenants').select('setup_fee_paid, ai_token_limit, ai_tokens_used, owner_id').eq('id', tenantId).single();
+      // Token cache: intentar leer de caché antes de consultar DB
+      const cachedBalance = await getTokenBalance(tenantId);
+      let fetchedTenantData: Record<string, unknown> | null = null;
+
+      if (cachedBalance) {
+        // Tenemos datos en caché — aún necesitamos setup_fee_paid y owner_id
+        const { data: partialTenant } = await adminSupabase
+          .from('tenants')
+          .select('setup_fee_paid, owner_id')
+          .eq('id', tenantId)
+          .single();
+
+        fetchedTenantData = {
+          ...partialTenant,
+          ai_token_limit: cachedBalance.limit,
+          ai_tokens_used: cachedBalance.used,
+        };
+      } else {
+        const { data } = await adminSupabase
+          .from('tenants')
+          .select('setup_fee_paid, ai_token_limit, ai_tokens_used, owner_id')
+          .eq('id', tenantId)
+          .single();
+        fetchedTenantData = data;
+
+        // Poblar caché para próximos requests
+        if (fetchedTenantData) {
+          await setTokenBalance(tenantId, {
+            limit: (fetchedTenantData.ai_token_limit as number) || 0,
+            used: (fetchedTenantData.ai_tokens_used as number) || 0,
+          });
+        }
+      }
+
       tenantData = fetchedTenantData;
       
       if (user && tenantData?.owner_id === user.id) {
@@ -152,7 +188,7 @@ TONO:
 
       
       // Validar periodo de prueba y pago de adquisición
-      const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at) : new Date(9999, 11, 31);
+      const trialEndsAt = settings?.trial_ends_at ? new Date(settings.trial_ends_at as string) : new Date(9999, 11, 31);
       const isExpiredTrial = new Date() > trialEndsAt;
       const isPaid = tenantData?.setup_fee_paid === true;
 
@@ -165,8 +201,8 @@ TONO:
       }
 
       // Validar tokens de IA
-      const limit = tenantData?.ai_token_limit || 0;
-      const used = tenantData?.ai_tokens_used || 0;
+      const limit = (tenantData?.ai_token_limit as number) || 0;
+      const used = (tenantData?.ai_tokens_used as number) || 0;
       const remaining = Math.max(0, limit - used);
       
       if (remaining <= 0) {
@@ -237,9 +273,9 @@ PROHIBICIONES:
 
         dynamicContext += `\nCITAS PARA HOY:\n`;
         if (appointments && appointments.length > 0) {
-          appointments.forEach((a: any) => {
+          appointments.forEach((a: { id: string; start_time: string; status: string; customers?: { name?: string }[] | null }) => {
             const time = new Date(a.start_time).toLocaleString('es-MX', {hour: '2-digit', minute:'2-digit'});
-            dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.name || 'Anónimo'} | Estado: ${a.status}\n`;
+            dynamicContext += `- ID: ${a.id} | ${time} | Cliente: ${a.customers?.[0]?.name || 'Anónimo'} | Estado: ${a.status}\n`;
           });
         } else {
           dynamicContext += `No hay citas para hoy.\n`;
@@ -247,24 +283,26 @@ PROHIBICIONES:
       }
     }
 
-    const aiMessages: any[] = messages.map((m: any) => ({
-      role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user',
+    const aiMessages = messages.map((m: { sender?: string; role?: string; text?: string; content?: string }) => ({
+      role: (m.sender === 'lotito' || m.role === 'assistant') ? 'assistant' : 'user' as const,
       content: m.text || m.content,
-    }));
+    })) as GenerateTextMessages;
 
-    const tools: Record<string, any> = {};
+    const tools: Record<string, ReturnType<typeof tool>> = {};
 
     // Solo definir tools de base de datos si hay un tenantId válido
     const tid: string | null = resolvedTenantId;
 
     if (tid) {
+      // @ts-expect-error - AI SDK v7 type inference limitation
       tools.check_availability = tool({
         description: "Revisa la disponibilidad en el calendario para una fecha específica (YYYY-MM-DD). Llama a esto SIEMPRE antes de agendar.",
         parameters: z.object({ date: z.string().describe("La fecha a consultar en formato YYYY-MM-DD") }),
-        // @ts-ignore - AI SDK v7 type inference limitation
+        // @ts-expect-error - AI SDK v7 type inference limitation
         execute: async ({ date }: { date: string }) => await checkAvailability(tid, date)
       });
 
+      // @ts-expect-error - AI SDK v7 type inference limitation
       tools.book_appointment = tool({
         description: "Crea una cita oficial en la base de datos para el cliente. REQUIERE el nombre del cliente. Es altamente recomendado solicitar y proporcionar el número de teléfono para confirmaciones.",
         parameters: z.object({
@@ -275,25 +313,27 @@ PROHIBICIONES:
           time: z.string().describe("HH:MM"),
           notes: z.string().optional()
         }),
-        // @ts-ignore - AI SDK v7 type inference limitation
-        execute: async (args: any) => {
+        // @ts-expect-error - AI SDK v7 type inference limitation
+        execute: async (args: { customerName: string; customerEmail?: string; customerPhone?: string; date: string; time: string; notes?: string }) => {
           return await bookAppointment(tid, args.customerName, args.customerEmail, args.customerPhone, args.date, args.time, args.notes);
         }
       });
 
+      // @ts-expect-error - AI SDK v7 type inference limitation
       tools.cancel_appointment = tool({
         description: "Cancela una cita dado su ID. Requiere el correo electrónico o número de teléfono del cliente para verificación.",
         parameters: z.object({
           appointmentId: z.string().describe("El ID de la cita a cancelar"),
           customerEmailOrPhone: z.string().describe("El correo electrónico o número de teléfono del cliente registrado en la cita")
         }),
-        // @ts-ignore - AI SDK v7 type inference limitation
-        execute: async (args: any) => {
+        // @ts-expect-error - AI SDK v7 type inference limitation
+        execute: async (args: { appointmentId: string; customerEmailOrPhone: string }) => {
           return await cancelAppointment(tid, args.appointmentId, args.customerEmailOrPhone, isAdmin, user?.id ?? null);
         }
       });
 
       if (isAdmin) {
+        // @ts-expect-error - AI SDK v7 type inference limitation
         tools.reschedule_appointment = tool({
           description: "Reagenda una cita dado su ID, a una nueva fecha y hora.",
           parameters: z.object({
@@ -301,16 +341,17 @@ PROHIBICIONES:
             newDate: z.string().describe("YYYY-MM-DD"),
             newTime: z.string().describe("HH:MM")
           }),
-          // @ts-ignore - AI SDK v7 type inference limitation
-          execute: async (args: any) => {
+          // @ts-expect-error - AI SDK v7 type inference limitation
+          execute: async (args: { appointmentId: string; newDate: string; newTime: string }) => {
             return await rescheduleAppointment(tid, args.appointmentId, args.newDate, args.newTime, undefined, true, user?.id ?? null);
           }
         });
 
+        // @ts-expect-error - AI SDK v7 type inference limitation
         tools.get_business_stats = tool({
           description: "Obtiene estadísticas del negocio como total de clientes y citas pendientes. Úsalo cuando te pidan un resumen o estatus del negocio.",
           parameters: z.object({}),
-          // @ts-ignore - AI SDK v7 type inference limitation
+          // @ts-expect-error - AI SDK v7 type inference limitation
           execute: async () => await getBusinessStats(tid)
         });
       }
@@ -319,25 +360,28 @@ PROHIBICIONES:
     // Frontend Tools (siempre disponibles, no requieren tenant)
     // Nota: todas las tools necesitan execute+parameters en AI SDK v7,
     // incluso si el execute es no-op (la acción real ocurre en el frontend)
+    // @ts-expect-error - AI SDK v7 type inference limitation
     tools.open_booking_modal = tool({
       description: "Abre el modal de agendamiento visual para que el cliente pueda ver horarios y reservar.",
       parameters: z.object({}),
-      // @ts-ignore - AI SDK v7 type inference limitation
+      // @ts-expect-error - AI SDK v7 type inference limitation
       execute: async () => ({ success: true, message: "Modal opened on client" })
     });
 
+    // @ts-expect-error - AI SDK v7 type inference limitation
     tools.refresh_calendar = tool({
       description: "Actualiza el calendario visual. Úsalo siempre después de agendar, cancelar o reagendar.",
       parameters: z.object({}),
-      // @ts-ignore - AI SDK v7 type inference limitation
+      // @ts-expect-error - AI SDK v7 type inference limitation
       execute: async () => ({ success: true, message: "Calendar refreshed on client" })
     });
 
+    // @ts-expect-error - AI SDK v7 type inference limitation
     tools.navigate_to = tool({
       description: "Redirige la vista a una sección del panel (ej: / para inicio, /clientes para clientes).",
       parameters: z.object({ route: z.enum(["/", "/clientes"]) }),
-      // @ts-ignore - AI SDK v7 type inference limitation
-      execute: async (args: any) => ({ success: true, route: args.route, message: "Navigation handled on client" })
+      // @ts-expect-error - AI SDK v7 type inference limitation
+      execute: async (args: { route: "/" | "/clientes" }) => ({ success: true, route: args.route, message: "Navigation handled on client" })
     });
 
     console.log('[Lotito] Usando modelo con key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? '✓ configurada' : '✗ NO CONFIGURADA');
@@ -347,14 +391,14 @@ PROHIBICIONES:
       system: basePrompt + dynamicContext,
       messages: aiMessages,
       tools,
-      // @ts-ignore
+      // @ts-expect-error - parameter restriction
       maxSteps: 3,
     });
 
     let reply = result.text || '';
     
     // Tools that were not executed automatically are frontend tools
-    const frontendToolCalls = (result.toolCalls || []).map((tc: any) => ({
+    const frontendToolCalls = (result.toolCalls || []).map((tc: { toolName: string; args?: unknown }) => ({
       name: tc.toolName,
       arguments: tc.args
     }));
@@ -370,8 +414,9 @@ PROHIBICIONES:
     }
 
     return NextResponse.json({ reply, toolCalls: frontendToolCalls });
-  } catch (error: any) {
-    console.error('[API /assistant] Error:', error.message, error.stack);
-    return NextResponse.json({ error: 'Error interno del servidor', detail: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[API /assistant] Error:', msg);
+    return NextResponse.json({ error: 'Error interno del servidor', detail: msg }, { status: 500 });
   }
 }

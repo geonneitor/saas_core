@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Core — Partner Manifesto</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --text-color: #f4f4f5;
+            --accent-color: #ccff00; /* Acid Lime */
+            --border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        ::selection {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Glitch / Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: 
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.2;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        header {
+            border-bottom: 2px solid var(--accent-color);
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            background: rgba(5, 5, 5, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-box {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            padding: 0.2rem 0.6rem;
+        }
+
+        .status-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            border: 1px solid var(--accent-color);
+            padding: 0.3rem 0.8rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        main {
+            max-w-7xl mx-auto;
+            padding: 4rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+        }
+
+        h1 span {
+            color: var(--accent-color);
+        }
+
+        h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            margin-top: 4rem;
+            margin-bottom: 1.5rem;
+            border-left: 5px solid var(--accent-color);
+            padding-left: 1rem;
+            text-transform: uppercase;
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: #a1a1aa;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        ul li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: #a1a1aa;
+            font-size: 1.1rem;
+        }
+
+        ul li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            padding: 3rem;
+            margin: 4rem 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .highlight-box h2 {
+            border: none;
+            padding: 0;
+            margin-top: 0;
+            color: var(--bg-color);
+        }
+
+        .highlight-box p, .highlight-box li {
+            color: var(--bg-color);
+            font-weight: 600;
+        }
+        
+        .highlight-box li::before {
+            color: var(--bg-color);
+        }
+
+        .terminal-block {
+            background: #000;
+            border: 1px solid #333;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fff;
+            margin-top: 2rem;
+        }
+
+        .terminal-block .prompt {
+            color: var(--accent-color);
+        }
+
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            color: #52525b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .highlight-box {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span class="logo-box">A</span>
+            Agentes.IA
+        </div>
+        <div class="status-badge">System Status: Online</div>
+    </header>
+
+    <main>
+        <h1>Bienvenido al <br><span>Core Team</span></h1>
+        <p style="font-size: 1.4rem; color: #fff; max-width: 700px;">
+            Estás uniéndote a una infraestructura de software premium B2B diseñada para digitalizar y automatizar las operaciones de negocios locales en toda Latinoamérica mediante IA.
+        </p>
+
+        <div class="card" style="margin-top: 3rem;">
+            <h3>[01] Nuestra Misión & Visión</h3>
+            <p><strong>Misión:</strong> Democratizar el acceso a infraestructuras de Inteligencia Artificial para PyMEs y negocios locales (clínicas, barberías, restaurantes). Eliminamos la fricción administrativa para que facturen más trabajando menos.</p>
+            <p><strong>Visión:</strong> Convertirnos en el estándar "Gold" de atención automatizada. Queremos que cada negocio local cuente con una central telefónica/WhatsApp inteligente, dándole el poder de un corporativo a una fracción del costo.</p>
+        </div>
+
+        <h2>[02] Valores Fundamentales</h2>
+        <div class="card">
+            <ul>
+                <li><strong>Premium por Defecto:</strong> No entregamos productos a medias. Nuestras interfaces son rápidas, brutales y generan confianza absoluta.</li>
+                <li><strong>Eficiencia Despiadada:</strong> Hacemos más con menos. Automatizamos lo repetitivo y humanizamos lo que requiere empatía real.</li>
+                <li><strong>Crecimiento Compartido:</strong> Si el cliente gana, nosotros ganamos. Si tú cierras ventas, tú cobras de forma automática y recurrente.</li>
+            </ul>
+        </div>
+
+        <h2>[03] Modos de Trabajo (Tu Rol)</h2>
+        <p>Como Partner/Agente, tu rol es un híbrido estratégico. Eres un arquitecto de soluciones y el puente de expansión del software.</p>
+        
+        <div class="card">
+            <h3>Responsabilidades:</h3>
+            <ul>
+                <li><strong>Captación Quirúrgica:</strong> Prospección en Google Maps y contacto directo con dueños de negocios que pierden dinero por no contestar mensajes a tiempo.</li>
+                <li><strong>Onboarding & Configuración:</strong> Tendrás tu propio portal `/agent` para dar de alta a tus clientes y preconfigurar la personalidad de su IA.</li>
+                <li><strong>Monitoreo Nivel 1:</strong> Acceso a métricas de tus propios clientes para garantizar que la IA está agendando citas y generando valor real.</li>
+            </ul>
+        </div>
+
+        <div class="highlight-box">
+            <h2>[04] Economía & Pagos</h2>
+            <p>Hemos construido un sistema financiero 100% transparente gracias a <strong>Stripe Connect</strong>. No hay excels, ni esperas a fin de mes.</p>
+            
+            <ul style="margin-top: 1.5rem;">
+                <li><strong>Comisión Recurrente (25%):</strong> Recibes un cuarto de la suscripción base de CADA cliente que captes, de por vida, directo a tu cuenta bancaria.</li>
+                <li><strong>Precios de Venta Sugeridos:</strong> Suscripciones de $49 a $99 USD/mes.</li>
+                <li><strong>Flujo de Pago:</strong> El cliente paga en el SaaS -> Stripe divide el pago automáticamente (Destination Charges) -> Tu comisión cae a tu banco.</li>
+            </ul>
+        </div>
+
+        <h2>[05] Próximos Pasos</h2>
+        <p>Una vez que recibas tus credenciales de acceso, deberás completar el flujo de seguridad bancaria.</p>
+        
+        <div class="terminal-block">
+            <div><span class="prompt">$</span> login --role agent</div>
+            <div style="color: #a1a1aa; margin: 0.5rem 0;">> Autenticación exitosa. Redirigiendo a /agent...</div>
+            <div><span class="prompt">$</span> stripe_connect --onboard</div>
+            <div style="color: #a1a1aa; margin: 0.5rem 0;">> Completa tu KYC bancario.</div>
+            <div style="color: var(--accent-color);">> Listo. Estás habilitado para generar ingresos.</div>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>CONFIDENCIAL — PROPIEDAD INTELECTUAL DE LA PLATAFORMA SAAS</p>
+        <p style="margin-top: 0.5rem; color: #3f3f46;">© 2026</p>
+    </footer>
+
+</body>
+</html>

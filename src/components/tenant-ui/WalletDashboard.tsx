@@ -1,9 +1,13 @@
 'use client';
 
+// [16726] Migrado desde src/components/admin/WalletDashboard.tsx a tenant-ui. 
+// Por qué: Cumplimiento de regla de arquitectura (Remoción de rutas legacy /admin).
+// Cómo: Movimiento atómico de archivo y actualización de importaciones.
+
 import { useState } from 'react';
 import { Wallet, Sparkles, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import StripeCheckoutButton from '@/components/admin/StripeCheckoutButton';
+import StripeCheckoutButton from '@/components/tenant-ui/StripeCheckoutButton';
 
 interface WalletDashboardProps {
   tokensUsed: number;
@@ -123,4 +127,3 @@ export default function WalletDashboard({ tokensUsed, tokensLimit, tenantId, has
     </div>
   );
 }
-

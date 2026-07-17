@@ -43,9 +43,12 @@ export default async function proxy(req: NextRequest) {
     return new NextResponse('Not Found', { status: 404 });
   }
 
-  let response: NextResponse;
-  let isAdminApp = false;
+  let response: NextResponse = NextResponse.next();
+  // [16726] Eliminada variable sin uso (Sprint 3.3)
   let isSuperAdminApp = false;
+
+  // [16726] Deuda Técnica Sprint 2: Regex Allowlist de dominios permitidos
+  const isValidBaseDomain = /^(?:[a-z0-9-]+\.)?(localhost|geo-dev\.online|vercel\.app)$/.test(hostname);
 
   // 1. REESCRITURA PARA EL SUPER ADMIN PANEL (thisisn0tasecret)
   if (hostname === `hq.${rootDomain}`) {
@@ -59,17 +62,19 @@ export default async function proxy(req: NextRequest) {
   } 
   // 2. REESCRITURA PARA LA LANDING PAGE PRINCIPAL
   else if (
-    hostname === rootDomain || 
-    hostname === `www.${rootDomain}` ||
-    hostname.endsWith('.vercel.app') || // Vercel direct links
-    hostname === 'localhost' // Para pruebas locales
+    isValidBaseDomain && (
+      hostname === rootDomain || 
+      hostname === `www.${rootDomain}` ||
+      hostname.endsWith('.vercel.app') || // Vercel direct links
+      hostname === 'localhost' // Para pruebas locales
+    )
   ) {
     // Es la app principal, no reescribimos nada fuera de lo normal
     console.log(`[PROXY] Passing through MAIN LANDING request for ${hostname}${path}`);
     response = NextResponse.next();
   } 
   // 3. REESCRITURA PARA LOS INQUILINOS / TENANTS (Las páginas de los clientes)
-  else {
+  else if (isValidBaseDomain) {
     // Extraemos el subdominio limpio. Ej: salondeunas.geo-dev.online -> salondeunas
     const cleanSubdomain = hostname
       .replace(`.${rootDomain}`, '')

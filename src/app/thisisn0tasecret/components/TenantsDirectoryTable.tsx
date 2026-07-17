@@ -10,7 +10,16 @@ import { ConfigureTenantModal } from "./ConfigureTenantModal"
 import { deleteTenant } from "../actions"
 
 interface TenantsDirectoryTableProps {
-  tenants: any[];
+  // [16726] Tipos estrictos (Sprint 3.3)
+  tenants: {
+    id: string;
+    name: string;
+    subdomain: string;
+    is_active: boolean;
+    ai_token_limit?: number;
+    ai_tokens_used?: number;
+    business_settings?: { whatsapp_number?: string; latitude?: number; longitude?: number }[];
+  }[];
   mapsApiKey: string;
 }
 
@@ -44,7 +53,7 @@ export function TenantsDirectoryTable({ tenants, mapsApiKey }: TenantsDirectoryT
             {tenants?.map((tenant) => {
               const settings = tenant.business_settings?.[0];
               const usagePercent = tenant.ai_token_limit 
-                ? Math.round((tenant.ai_tokens_used / tenant.ai_token_limit) * 100) 
+                ? Math.round(((tenant.ai_tokens_used || 0) / tenant.ai_token_limit) * 100) 
                 : 0;
               
               return (

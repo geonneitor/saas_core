@@ -1,7 +1,7 @@
 # 🏗️ Biblia del Proyecto — Arquitectura y Contexto Global (SaaS Core)
 
-> **Última actualización:** 2026-07-13
-> **Estado:** Sprints 0, 1, 2, 3.1, 3.2, 5.1, 5.2 y 5.3 Completados. Sprint 3.3 (tipos estrictos), Sprint 4 (WhatsApp) y deuda de Sprint 2 pendientes.
+> **Última actualización:** 2026-07-16
+> **Estado:** Sprints 0, 1, 2, 3.1, 3.2, 5.1, 5.2 y 5.3 Completados. Sprint 4 (WhatsApp) en curso (Fases 3 y 4 completadas).
 
 ---
 
@@ -27,9 +27,10 @@
 |----------|-----------------|---------|
 | `hq.${ROOT_DOMAIN}` | `/hq/*` | **HQ (Headquarters):** Único panel de super-admin del SaaS (métricas globales, creación, eliminación y edición de límites de tokens de todos los tenants). |
 | `${ROOT_DOMAIN}` / `www.*` / `*.vercel.app` | `/` | **Landing principal:** Captación de prospectos y onboarding global. |
-| `${tenant}.${ROOT_DOMAIN}` | `/[domain]/*` | **Espacio del Tenant:** Landing pública de reservas y su panel administrativo específico (`/[domain]/console`). |
+| `${tenant}.${ROOT_DOMAIN}` | `/[domain]/*` | **Espacio del Tenant:** Landing pública de reservas y su panel administrativo específico (`/[domain]/console`). Se usa un **Enrutador de Temas** (`page.tsx`) que renderiza layouts aislados desde `src/components/tenant-ui/themes/` para no afectar componentes globales. |
 
 > 💡 **Nota de Consolidación:** La antigua ruta `app.${ROOT_DOMAIN}` que servía de "Command Center" fue completamente eliminada y sus componentes de creación/modificación de tenants fueron unificados dentro del panel `/hq` de super-admin para simplificar el mantenimiento y evitar confusión de subdominios.
+> 💡 **Nota de Temas:** **NO modificar `page.tsx` con layouts de UI directamente**. Todo diseño o layout debe encapsularse en un archivo dentro de `src/components/tenant-ui/themes/` para mantener acoplamiento suelto.
 
 ---
 
@@ -64,8 +65,9 @@
 *   Limpiar `console.log` en producción (17) envolviéndolos en `if (NODE_ENV !== 'production')`.
 *   Quitar `isAdmin` del body del cliente en `AiAssistantChat.tsx:128`.
 
-### 🔵 Sprint 4: Automatización (Pendiente)
-*   **WhatsApp API:** Integración con la API de WhatsApp de Meta para que la IA responda y gestione las reservas de los tenants por mensajería directa en tiempo real.
+### 🔵 Sprint 4: Automatización WhatsApp y Motor de Temas (En Curso)
+*   **Fase 3 (Backend & Cache):** Integración con API de Meta. Webhook procesa en segundo plano usando `after()` de Next.js para responder `< 200ms`. Se integró Upstash Redis como caché para límite de tokens (`src/lib/token-cache.ts`) y rate limit (`src/lib/rate-limit.ts`). Migración SQL `wa_inbox` generada.
+*   **Fase 4 (Theme Engine):** Reescritura arquitectónica de la landing pública (`page.tsx`) como un Enrutador Dinámico de Temas. Nuevas plantillas (`CozyStudioTheme`, `DarkLuxuryTheme`) integradas de manera aislada.
 
 ### 🟡 Deuda Técnica de Sprint 2 (Pendiente)
 *   `app.tu-dominio.com` hardcodeado en 6 lugares → helper `getAppUrl()` desde `NEXT_PUBLIC_ROOT_DOMAIN`.

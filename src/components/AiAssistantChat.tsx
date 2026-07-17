@@ -46,7 +46,8 @@ export default function AiAssistantChat({
   useEffect(() => {
     if (isLoading && aiAvatar === 'error404') {
       try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        // [16726] Eliminado any de window.webkitAudioContext (Sprint 3.3)
+        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (!AudioContextClass) return;
         const audioCtx = new AudioContextClass();
         const oscillator = audioCtx.createOscillator();
@@ -83,7 +84,7 @@ export default function AiAssistantChat({
           clearInterval(interval);
           if (audioCtx.state !== 'closed') audioCtx.close();
         };
-      } catch (e) {
+      } catch {
         console.warn("AudioContext bloqueado. Se requiere interacción del usuario previa.");
       }
     }
@@ -96,16 +97,25 @@ export default function AiAssistantChat({
   }, []);
 
   const toggleMic = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    // [16726] Interface para eliminar any de SpeechRecognition
+    interface ISpeechRecognition {
+      lang: string;
+      onstart: () => void;
+      onresult: (event: { results: { transcript: string }[][] }) => void;
+      onend: () => void;
+      start: () => void;
+    }
+    const SpeechRecognitionClass = (window as unknown as { SpeechRecognition?: new () => ISpeechRecognition }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: new () => ISpeechRecognition }).webkitSpeechRecognition;
+    
+    if (!SpeechRecognitionClass) {
       alert("Tu navegador actual no soporta dictado por voz nativo.");
       return;
     }
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionClass();
     recognition.lang = 'es-MX';
     
     recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: { results: { transcript: string }[][] }) => {
       const transcript = event.results[0][0].transcript;
       setInput(prev => (prev ? prev + " " + transcript : transcript));
     };
@@ -141,7 +151,8 @@ export default function AiAssistantChat({
       }
       
       if (data.toolCalls && data.toolCalls.length > 0) {
-        data.toolCalls.forEach((tool: any) => {
+        // [16726] Tipos estrictos para toolCalls
+        data.toolCalls.forEach((tool: { name: string, arguments?: Record<string, string> }) => {
           if (tool.name === 'open_booking_modal') {
              // ZUSTAND: Abre el modal real
              openModal(tool.arguments);
@@ -159,7 +170,7 @@ export default function AiAssistantChat({
           }
         });
       }
-    } catch (e) {
+    } catch {
       setMessages(prev => [...prev, { role: 'assistant', text: "Hubo un error de conexión temporal. Intenta de nuevo." }]);
     }
     setIsLoading(false);

@@ -18,10 +18,12 @@ export async function createClient() {
           try {
             const isLocal = process.env.NODE_ENV === 'development';
             let cookieDomain: string | undefined = undefined;
+            // [16726] Deuda Técnica Sprint 2: Cookie domain dinámico
+            const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
             if (isLocal) {
               cookieDomain = 'localhost';
-            } else if (host.includes('geo-dev.online')) {
-              cookieDomain = '.geo-dev.online';
+            } else if (host.includes(rootDomain)) {
+              cookieDomain = `.${rootDomain}`;
             }
 
             cookiesToSet.forEach(({ name, value, options }) => {

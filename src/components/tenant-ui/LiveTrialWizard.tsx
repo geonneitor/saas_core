@@ -12,10 +12,10 @@ const FONTS = [
   { id: 'mono', name: 'Digital' }
 ];
 
-const COLORS = [
+const THEMES = [
   { id: 'dark-luxury', name: 'Dark Luxury', bg: 'bg-[#111317]', text: 'text-white', hex: '#111317' },
-  { id: 'light-minimal', name: 'Light Minimal', bg: 'bg-[#fafafa]', text: 'text-black', hex: '#fafafa' },
-  { id: 'neon-cyber', name: 'Neon Cyber', bg: 'bg-black', text: 'text-[#00ff9d]', hex: '#000000' }
+  { id: 'cozy-studio', name: 'Cozy Studio', bg: 'bg-black', text: 'text-[#d4af37]', hex: '#1c1917' },
+  { id: 'clean-preview', name: 'Clean Web', bg: 'bg-white', text: 'text-black', hex: '#f8fafc' }
 ];
 
 const IMAGES = [
@@ -148,13 +148,13 @@ function LiveTrialWizardContent({
                 </div>
               </section>
 
-              {/* Colores */}
+              {/* Diseño de Tema */}
               <section>
                 <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                  <Palette className="w-4 h-4" /> Paleta de Colores
+                  <Palette className="w-4 h-4" /> Diseño de la Página
                 </label>
                 <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
-                  {COLORS.map(c => (
+                  {THEMES.map(c => (
                     <button
                       key={c.id}
                       onClick={() => { setActiveTheme(c.id); saveVisualSettings('theme', c.id); }}

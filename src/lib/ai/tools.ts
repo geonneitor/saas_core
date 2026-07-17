@@ -46,8 +46,9 @@ export async function checkAvailability(tenantId: string, date: string) {
         message: 'Resumen de citas del día devuelto con éxito. Compara las citas ocupadas con el horario laboral para ofrecer espacios disponibles.'
       }
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+// [16726] Tipos estrictos (Sprint 3.3)
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -138,8 +139,9 @@ export async function bookAppointment(
         appointment: appointment
       }
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+// [16726] Tipos estrictos (Sprint 3.3)
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -197,8 +199,9 @@ export async function cancelAppointment(
     if (error) throw error;
 
     return { success: true, message: 'La cita ha sido cancelada exitosamente.' };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+// [16726] Tipos estrictos (Sprint 3.3)
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -269,8 +272,9 @@ export async function rescheduleAppointment(
       message: 'La cita ha sido reagendada exitosamente.',
       appointment: data
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+// [16726] Tipos estrictos (Sprint 3.3)
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -295,7 +299,8 @@ export async function getBusinessStats(tenantId: string) {
         upcoming_appointments: aptCount || 0,
       }
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+// [16726] Tipos estrictos (Sprint 3.3)
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

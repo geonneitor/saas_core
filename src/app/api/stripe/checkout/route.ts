@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     // Validar ownership: el usuario autenticado DEBE ser dueño del tenant
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('owner_id, subdomain')
+      .select('owner_id, subdomain, agent_id')
       .eq('id', tenantId)
       .single();
 
@@ -77,13 +77,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No autorizado para este negocio' }, { status: 403 });
     }
 
+    // Buscar si el agente tiene stripe configurado (Cast a any porque la DB acaba de migrar y los tipos no están al día)
+    let agentStripeId: string | null = null;
+    const agentId = (tenant as any).agent_id;
+    if (agentId) {
+      const { data: agentProfile } = await supabase
+        .from('profiles')
+        .select('stripe_account_id, stripe_onboarding_complete')
+        .eq('id', agentId)
+        .single();
+      
+      if (agentProfile && (agentProfile as any).stripe_onboarding_complete && (agentProfile as any).stripe_account_id) {
+        agentStripeId = (agentProfile as any).stripe_account_id;
+      }
+    }
+
     // Construir URLs de retorno robustas para multi-tenant
     const origin = req.headers.get('origin')
       || (process.env.NODE_ENV === 'development'
         ? `http://${tenant.subdomain}.localhost:3000`
         : `https://${tenant.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`);
-
-
 
     // Redirigir post-pago según el tipo de compra
     const isTokenPurchase = moduleId.startsWith('tokens_');
@@ -93,7 +106,7 @@ export async function POST(req: Request) {
     const successUrl = `${postPaymentOrigin}?success=true&module=${moduleId}`;
     const cancelUrl = `${postPaymentOrigin}?canceled=true`;
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       customer_email: user.email,
       line_items: [
@@ -117,7 +130,21 @@ export async function POST(req: Request) {
         moduleId,
         userId: user.id,
       },
-    });
+    };
+
+    // Si hay un agente afiliado con cuenta de Stripe lista, hacemos un Destination Charge
+    if (agentStripeId) {
+      // El agente recibe el 25% (Nosotros retenemos el 75% como platform/application fee)
+      const platformFeeCents = Math.round((entry.price * 100) * 0.75);
+      sessionConfig.payment_intent_data = {
+        application_fee_amount: platformFeeCents,
+        transfer_data: {
+          destination: agentStripeId,
+        },
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {

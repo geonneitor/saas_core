@@ -7,7 +7,8 @@ interface BookingState {
     notes?: string;
     suggestedTime?: string;
   } | null;
-  openModal: (data?: any) => void;
+  // [16726] Tipos estrictos (Sprint 3.3)
+  openModal: (data?: BookingState['prefilledData']) => void;
   closeModal: () => void;
 }
 

@@ -31,7 +31,8 @@ export function AvatarSelector({ tenantId, currentAvatar, isAdmin = false }: { t
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container text-foreground text-[13px] font-bold rounded-full border border-border cursor-default shadow-sm">
         <div className="w-5 h-5 flex items-center justify-center overflow-hidden rounded-full">
-           <div className="scale-[0.4]"><AvatarSystem variant={currentAvatar as any} isActive={false} /></div>
+           {/* [16726] Tipos estrictos para AvatarSystem (Sprint 3.3) */}
+           <div className="scale-[0.4]"><AvatarSystem variant={currentAvatar as "lotito" | "orb" | "cat" | "robot" | "star" | "error404"} isActive={false} /></div>
         </div>
         <span>Asistente IA</span>
       </div>
@@ -66,7 +67,8 @@ export function AvatarSelector({ tenantId, currentAvatar, isAdmin = false }: { t
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-surface-bright border ${currentAvatar === avatar.id ? 'border-transparent' : 'border-border'}`}>
                    {/* Usamos una versión inactiva chiquita del avatar */}
                    <div className="scale-[0.5]">
-                     <AvatarSystem variant={avatar.id as any} isActive={false} />
+                     {/* [16726] Tipos estrictos para AvatarSystem (Sprint 3.3) */}
+                     <AvatarSystem variant={avatar.id as "lotito" | "orb" | "cat" | "robot" | "star" | "error404"} isActive={false} />
                    </div>
                 </div>
                 <span className="text-[13px] font-semibold">{avatar.name}</span>

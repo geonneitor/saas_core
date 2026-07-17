@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { CreditCard, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
-import WalletDashboard from '@/components/admin/WalletDashboard';
-import StripeCheckoutButton from '@/components/admin/StripeCheckoutButton';
+// [16726] Importaciones de WalletDashboard y StripeCheckoutButton actualizadas a tenant-ui.
+// Por qué: Cumplimiento de regla de arquitectura (Remoción de rutas legacy /admin).
+import WalletDashboard from '@/components/tenant-ui/WalletDashboard';
+import StripeCheckoutButton from '@/components/tenant-ui/StripeCheckoutButton';
 
 export default async function ConsoleBillingPage(props: {
   params: Promise<{ domain: string }>;
